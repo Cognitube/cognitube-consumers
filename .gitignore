@@ -1,0 +1,13 @@
+target/
+.mvn/
+.idea/
+.DS_Store
+
+*.iws
+*.iml
+*.ipr
+*.log
+*.pid
+*.txt.*
+*.xml.*
+
