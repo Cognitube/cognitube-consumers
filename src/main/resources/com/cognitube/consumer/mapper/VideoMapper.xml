@@ -1,0 +1,30 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cognitube.consumer.mapper.VideoMapper">
+
+  <sql id="videoFields">
+    id, title, description, file_link, cover_image_link, author_id, length, date_created, keywords_link, audio_link, status
+  </sql>
+
+  <sql id="insertFields">
+    title, description, file_link, cover_image_link, author_id, length, keywords_link, audio_link, status
+  </sql>
+
+  <update id="updateVideo">
+    UPDATE videos
+    SET
+      <if test="title != null">title = #{title},</if>
+      <if test="description != null">description = #{description},</if>
+      <if test="fileLink != null">file_link = #{fileLink},</if>
+      <if test="coverImageLink != null">cover_image_link = #{coverImageLink},</if>
+      <if test="authorId != null">author_id = #{authorId},</if>
+      <if test="length != null">length = #{length},</if>
+      <if test="keywordsLink != null">keywords_link = #{keywordsLink},</if>
+      <if test="status != null">status = #{status},</if>
+      <if test="audioLink != null">audio_link = #{audioLink},</if>
+      <if test="isDeleted != null">is_deleted = #{isDeleted},</if>
+      id = id
+    WHERE id = #{id}
+    </update>
+
+</mapper>

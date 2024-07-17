@@ -13,11 +13,8 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class VideoUploadMessage implements Message {
-    private Long videoId;
-    private String videoName;
-    private String imageUrl;
+    private String videoId;
     private String videoUrl;
     private Long userId;
-    private String description;
-    private String originalFilename;
+    private Integer retryCount;
 }

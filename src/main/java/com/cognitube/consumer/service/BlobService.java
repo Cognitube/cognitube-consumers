@@ -46,6 +46,9 @@ public class BlobService {
     @Value("${azure.storage.container-name-profile-image-container}")
     private String profileImageContainerName;
 
+    @Value("${azure.storage.container-name-audio-container}")
+    private String audioContainerName;
+
     @Autowired
     public BlobService(BlobServiceClient blobServiceClient) {
         this.blobServiceClient = blobServiceClient;
@@ -58,6 +61,10 @@ public class BlobService {
 
     public String uploadTempVideoGetFullUrl(File video) {
         return uploadFileToBlob(video, tempVideoContainerName);
+    }
+
+    public String uploadAudio(File audio) {
+        return uploadFileToBlob(audio, audioContainerName);
     }
 
     public String uploadImage(File image, ContainerName containerName) {

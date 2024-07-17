@@ -9,13 +9,6 @@ import org.apache.ibatis.annotations.Mapper;
 public interface VideoMapper {
 
     /**
-     * Uploads a video to the database
-     * @param video video object
-     */
-    void createVideo(Video video);
-
-
-    /**
      * Update video
      * @param video
      */
