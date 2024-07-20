@@ -1,9 +1,11 @@
 package com.cognitube.consumer.service;
 
+import com.cognitube.consumer.config.ConstantValueConfig;
 import com.cognitube.consumer.service.exception.NoAudioTrackException;
 import com.cognitube.consumer.util.Constants;
 import com.cognitube.consumer.util.FileNameGenerator;
 import com.cognitube.consumer.util.StreamGobbler;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,10 +25,10 @@ import java.util.List;
  */
 @Service
 @Slf4j
+@AllArgsConstructor
 public class VideoEncodingService {
 
-    @Value("${application.audio.max.size}")
-    private long MAX_FILE_SIZE_BYTES;
+    private final ConstantValueConfig constantValueConfig;
 
     /**
      * Re-encode a video file to a standard format

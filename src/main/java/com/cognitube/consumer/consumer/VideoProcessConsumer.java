@@ -1,6 +1,7 @@
 package com.cognitube.consumer.consumer;
 
 
+import com.cognitube.consumer.config.ConstantValueConfig;
 import com.cognitube.consumer.consumer.dao.VideoEncodeMessage;
 import com.cognitube.consumer.consumer.dao.VideoUploadMessage;
 import com.cognitube.consumer.producer.VideoProcessProducer;
@@ -42,6 +43,7 @@ import java.util.stream.Stream;
  */
 @Slf4j
 @Component
+@AllArgsConstructor
 public class VideoProcessConsumer {
     private static final Double SEGMENT_DURATION_IN_MINUTE = 30.0;
 
@@ -50,21 +52,7 @@ public class VideoProcessConsumer {
     private final VideoProcessProducer videoProcessProducer;
     private final RedisTemplate<String, String> redisTemplate;
     private final VideoEncodingService videoEncodingService;
-
-    @Value("${application.keyword.service.url}")
-    private String keywordServiceUrl;
-
-    @Value("${azure.storage.blob.endpoint}")
-    private String blobEndpoint;
-
-    @Autowired
-    public VideoProcessConsumer(ObjectMapper objectMapper, BlobService blobService, VideoProcessProducer videoProcessProducer, RedisTemplate<String, String> redisTemplate, VideoEncodingService videoEncodingService) {
-        this.objectMapper = objectMapper;
-        this.blobService = blobService;
-        this.videoProcessProducer = videoProcessProducer;
-        this.redisTemplate = redisTemplate;
-        this.videoEncodingService = videoEncodingService;
-    }
+    private final ConstantValueConfig constantValueConfig;
 
     @KafkaListener(topics = "${kafka.video.process.topic}", groupId = "${kafka.video.process.group.id}")
     public void consumeProcessVideoMessage(ConsumerRecord<String, String> record){
@@ -144,10 +132,10 @@ public class VideoProcessConsumer {
 
     private void createKeywordExtractionJob(String audioFileurl, String videoId) {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpPost uploadFile = new HttpPost(keywordServiceUrl + "/v1/get-keywords");
+            HttpPost uploadFile = new HttpPost(constantValueConfig.keywordServiceUrl + "/v1/get-keywords");
 
             JSONObject json = new JSONObject();
-            json.put("url", blobEndpoint + "/" + audioFileurl);
+            json.put("url", constantValueConfig.blobEndpoint + "/" + audioFileurl);
 
             StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
             uploadFile.setEntity(entity);

@@ -1,5 +1,6 @@
 package com.cognitube.consumer.config;
 
+import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,22 +17,18 @@ import java.util.Map;
 
 @EnableKafka
 @Configuration
+@AllArgsConstructor
 public class KafkaConsumerConfig {
 
-    @Value("${kafka.eventhub.namespace:}")
-    private String namespace;
-    @Value("${kafka.username}")
-    private String username;
-    @Value("${kafka.password}")
-    private String password;
+    private final ConstantValueConfig constantValueConfig;
 
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put("security.protocol", "SASL_SSL");
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, namespace + ".servicebus.windows.net:9093");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, constantValueConfig.namespace + ".servicebus.windows.net:9093");
         props.put("sasl.mechanism", "PLAIN");
-        props.put("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"" + username + "\" password=\"" + password + "\";");
+        props.put("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"" + constantValueConfig.username + "\" password=\"" + constantValueConfig.password + "\";");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "video-process-group");

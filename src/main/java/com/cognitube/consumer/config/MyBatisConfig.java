@@ -20,7 +20,7 @@ import javax.sql.DataSource;
  * @date 2024/5/23 20:36:24
  */
 @Configuration
-@MapperScan({"com.cognitube.server.app.mapper", "com.cognitube.server.admin.mapper"})
+@MapperScan({"com.cognitube.server.app.mapper"})
 public class MyBatisConfig {
 
     @Bean
