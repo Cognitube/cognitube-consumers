@@ -2,16 +2,13 @@ package com.cognitube.consumer.service;
 
 import com.cognitube.consumer.config.ConstantValueConfig;
 import com.cognitube.consumer.service.exception.NoAudioTrackException;
-import com.cognitube.consumer.util.Constants;
 import com.cognitube.consumer.util.FileNameGenerator;
 import com.cognitube.consumer.util.StreamGobbler;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -100,13 +97,13 @@ public class VideoEncodingService {
                 "-y", // -y: Overwrite output files without asking.
 
                 // -acodec libopus: Specifies the audio codec. 'libopus' is chosen for its efficiency and high quality, particularly suitable for voice and music in low to mid-bitrate ranges.
-                // -b:a: Sets the audio bitrate. Here it is set using 'Constants.DEFAULT_AUDIO_BIT_RATE_KBPS' which is likely defined elsewhere in the code.
+                // -b:a: Sets the audio bitrate. Here it is set using 'DEFAULT_AUDIO_BIT_RATE_KBPS' which is likely defined elsewhere in the code.
                 //       This bitrate, followed by 'k', indicates kilobits per second, ensuring that the audio is encoded at this specified rate.
-                "-acodec", "libopus", "-b:a", Constants.DEFAULT_AUDIO_BIT_RATE_KBPS + "k",
+                "-acodec", "libopus", "-b:a", constantValueConfig.DEFAULT_AUDIO_BIT_RATE_KBPS + "k",
 
                 // -ac 1: Sets the number of audio channels. '1' means mono audio output, which is typically used for voice recordings to reduce file size and complexity.
-                // -ar: Sets the audio sampling rate. Here, it uses 'Constants.DEFAULT_SAMPLING_RATE', defining how many samples per second are captured in the audio file.
-                "-ac", "1", "-ar", String.valueOf(Constants.DEFAULT_SAMPLING_RATE),
+                // -ar: Sets the audio sampling rate. Here, it uses 'DEFAULT_SAMPLING_RATE', defining how many samples per second are captured in the audio file.
+                "-ac", "1", "-ar", String.valueOf(constantValueConfig.DEFAULT_SAMPLING_RATE),
 
                 // %s: This placeholder will be replaced by `audioFile.getAbsolutePath()`, which indicates the path where the processed audio file will be saved.
                 //      This part of the command specifies the output file location and name.

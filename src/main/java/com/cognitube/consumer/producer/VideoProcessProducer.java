@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @Component
 public class VideoProcessProducer {
+    // TODO: This producer is supposed to be expanded to send messages for other topics
 
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;

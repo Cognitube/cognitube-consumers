@@ -7,7 +7,6 @@ import com.cognitube.consumer.consumer.dao.VideoUploadMessage;
 import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.BlobService;
 import com.cognitube.consumer.service.VideoEncodingService;
-import com.cognitube.consumer.util.Constants;
 import com.cognitube.consumer.util.RedisKeys;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,8 +23,6 @@ import org.jcodec.common.io.FileChannelWrapper;
 import org.jcodec.common.io.NIOUtils;
 import org.json.JSONObject;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -74,10 +71,10 @@ public class VideoProcessConsumer {
             recordVideoProcessingStatus(message.getVideoId());
 
             log.info("Start processing video: {}", message.getVideoId());
-            File videoFile = getOriginalVideo(message.getVideoUrl());
+            final File videoFile = getOriginalVideo(message.getVideoUrl());
 
             log.info("Start converting video to audio: {}", message.getVideoId());
-            File audioFile = videoEncodingService.convertVideoToAudio(videoFile);
+            final File audioFile = videoEncodingService.convertVideoToAudio(videoFile);
             String audioUrl = blobService.uploadAudio(audioFile);
 
             log.info("Audio extracted. Stored at: {}", audioUrl);
@@ -86,17 +83,19 @@ public class VideoProcessConsumer {
             log.info("Keyword extraction job created. Waiting for keywords to be extracted.");
         } catch (JsonProcessingException e) {
             log.error("Failed to deserialize video process message", e);
+            //TODO: specify exception types
         } catch (Exception e) {
             log.error("Failed to process video", e);
             if (message != null && message.getRetryCount() > 3) {
                 log.error("Failed to process video after 3 retries. Terminating processing for video.");
             } else {
                 message.setRetryCount(message.getRetryCount() + 1);
-                videoProcessProducer.sendVideoUploadMessageAsync(message, Constants.VIDEO_PROCESS_TOPIC, (metadata, exception) -> {
+                final VideoUploadMessage finalMessage = message;
+                videoProcessProducer.sendVideoUploadMessageAsync(message, constantValueConfig.KAFKA_VIDEO_PROCESS_TOPIC, (metadata, exception) -> {
                     if (exception != null) {
                         throw new RuntimeException("Failed to send video upload message", exception);
                     } else {
-                        log.info("Video upload message sent successfully.");
+                        log.info("Video upload message sent successfully. Retry count: {}", finalMessage.getRetryCount());
                     }
                 });
             }
@@ -122,7 +121,7 @@ public class VideoProcessConsumer {
     }
 
     private void recordVideoProcessingStatus(String videoId) {
-        String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         try {
             redisTemplate.opsForValue().set(videoProcessStatusKey, "processing");
         } catch (Exception e) {
@@ -132,12 +131,12 @@ public class VideoProcessConsumer {
 
     private void createKeywordExtractionJob(String audioFileurl, String videoId) {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpPost uploadFile = new HttpPost(constantValueConfig.keywordServiceUrl + "/v1/get-keywords");
+            final HttpPost uploadFile = new HttpPost(constantValueConfig.keywordServiceUrl + "/v1/get-keywords");
 
-            JSONObject json = new JSONObject();
+            final JSONObject json = new JSONObject();
             json.put("url", constantValueConfig.blobEndpoint + "/" + audioFileurl);
 
-            StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
+            final StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
             uploadFile.setEntity(entity);
 
             httpClient.execute(uploadFile);
@@ -147,7 +146,7 @@ public class VideoProcessConsumer {
     }
 
     private boolean isVideoProcessedOrProcessing(String videoId) {
-        String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         String status = null;
         try {
             status = redisTemplate.opsForValue().get(videoProcessStatusKey);
