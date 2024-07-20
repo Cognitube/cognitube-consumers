@@ -1,6 +1,5 @@
 package com.cognitube.consumer.service;
 
-import com.cognitube.consumer.config.ConstantValueConfig;
 import com.cognitube.consumer.service.exception.NoAudioTrackException;
 import com.cognitube.consumer.util.FileNameGenerator;
 import com.cognitube.consumer.util.StreamGobbler;
@@ -25,7 +24,8 @@ import java.util.List;
 @AllArgsConstructor
 public class VideoEncodingService {
 
-    private final ConstantValueConfig constantValueConfig;
+    private final int DEFAULT_AUDIO_BIT_RATE_KBPS;
+    private final int DEFAULT_SAMPLING_RATE;
 
     /**
      * Re-encode a video file to a standard format
@@ -99,11 +99,11 @@ public class VideoEncodingService {
                 // -acodec libopus: Specifies the audio codec. 'libopus' is chosen for its efficiency and high quality, particularly suitable for voice and music in low to mid-bitrate ranges.
                 // -b:a: Sets the audio bitrate. Here it is set using 'DEFAULT_AUDIO_BIT_RATE_KBPS' which is likely defined elsewhere in the code.
                 //       This bitrate, followed by 'k', indicates kilobits per second, ensuring that the audio is encoded at this specified rate.
-                "-acodec", "libopus", "-b:a", constantValueConfig.DEFAULT_AUDIO_BIT_RATE_KBPS + "k",
+                "-acodec", "libopus", "-b:a", DEFAULT_AUDIO_BIT_RATE_KBPS + "k",
 
                 // -ac 1: Sets the number of audio channels. '1' means mono audio output, which is typically used for voice recordings to reduce file size and complexity.
                 // -ar: Sets the audio sampling rate. Here, it uses 'DEFAULT_SAMPLING_RATE', defining how many samples per second are captured in the audio file.
-                "-ac", "1", "-ar", String.valueOf(constantValueConfig.DEFAULT_SAMPLING_RATE),
+                "-ac", "1", "-ar", String.valueOf(DEFAULT_SAMPLING_RATE),
 
                 // %s: This placeholder will be replaced by `audioFile.getAbsolutePath()`, which indicates the path where the processed audio file will be saved.
                 //      This part of the command specifies the output file location and name.

@@ -1,7 +1,6 @@
 package com.cognitube.consumer.consumer;
 
 
-import com.cognitube.consumer.config.ConstantValueConfig;
 import com.cognitube.consumer.consumer.dao.VideoEncodeMessage;
 import com.cognitube.consumer.consumer.dao.VideoUploadMessage;
 import com.cognitube.consumer.producer.VideoProcessProducer;
@@ -25,6 +24,7 @@ import org.json.JSONObject;
 import org.slf4j.MDC;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -49,25 +49,35 @@ public class VideoProcessConsumer {
     private final VideoProcessProducer videoProcessProducer;
     private final RedisTemplate<String, String> redisTemplate;
     private final VideoEncodingService videoEncodingService;
-    private final ConstantValueConfig constantValueConfig;
+    private final String KAFKA_VIDEO_PROCESS_TOPIC;
+    private final String keywordServiceUrl;
+    private final String blobEndpoint;
 
     @KafkaListener(topics = "${kafka.video.process.topic}", groupId = "${kafka.video.process.group.id}")
-    public void consumeProcessVideoMessage(ConsumerRecord<String, String> record){
-        process(record);
+    public void consumeProcessVideoMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
+        process(record, acknowledgment);
     }
 
-    public void process(ConsumerRecord<String, String> record) {
+    public void process(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
         VideoUploadMessage message = null;
+        acknowledgment.acknowledge();
+
         try {
             message = objectMapper.readValue(record.value(), VideoUploadMessage.class);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to deserialize video process message", e);
+            return;
+        }
 
-            MDC.put("videoId", message.getVideoId());
-            MDC.put("userId", message.getUserId().toString());
-            MDC.put("processingTime", System.currentTimeMillis() + "");
+        MDC.put("videoId", message.getVideoId());
+        MDC.put("userId", message.getUserId().toString());
+        MDC.put("processingTime", System.currentTimeMillis() + "");
 
+        try {
             if(isVideoProcessedOrProcessing(message.getVideoId())) {
                 return;
             }
+
             recordVideoProcessingStatus(message.getVideoId());
 
             log.info("Start processing video: {}", message.getVideoId());
@@ -81,17 +91,16 @@ public class VideoProcessConsumer {
             createKeywordExtractionJob(audioUrl, message.getVideoId());
 
             log.info("Keyword extraction job created. Waiting for keywords to be extracted.");
-        } catch (JsonProcessingException e) {
-            log.error("Failed to deserialize video process message", e);
-            //TODO: specify exception types
+
         } catch (Exception e) {
+            //TODO: specify more exception types
             log.error("Failed to process video", e);
             if (message != null && message.getRetryCount() > 3) {
                 log.error("Failed to process video after 3 retries. Terminating processing for video.");
             } else {
                 message.setRetryCount(message.getRetryCount() + 1);
                 final VideoUploadMessage finalMessage = message;
-                videoProcessProducer.sendVideoUploadMessageAsync(message, constantValueConfig.KAFKA_VIDEO_PROCESS_TOPIC, (metadata, exception) -> {
+                videoProcessProducer.sendVideoUploadMessageAsync(message, KAFKA_VIDEO_PROCESS_TOPIC, (metadata, exception) -> {
                     if (exception != null) {
                         throw new RuntimeException("Failed to send video upload message", exception);
                     } else {
@@ -131,10 +140,10 @@ public class VideoProcessConsumer {
 
     private void createKeywordExtractionJob(String audioFileurl, String videoId) {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            final HttpPost uploadFile = new HttpPost(constantValueConfig.keywordServiceUrl + "/v1/get-keywords");
+            final HttpPost uploadFile = new HttpPost(keywordServiceUrl + "/v1/get-keywords");
 
             final JSONObject json = new JSONObject();
-            json.put("url", constantValueConfig.blobEndpoint + "/" + audioFileurl);
+            json.put("url", blobEndpoint + "/" + audioFileurl);
 
             final StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
             uploadFile.setEntity(entity);

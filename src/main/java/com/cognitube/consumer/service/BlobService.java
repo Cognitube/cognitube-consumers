@@ -4,14 +4,11 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.models.BlobStorageException;
-import com.cognitube.consumer.config.ConstantValueConfig;
 import com.cognitube.consumer.service.exception.CloudStorageException;
 import com.cognitube.consumer.enums.ContainerName;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -30,25 +27,31 @@ public class BlobService {
 
     private static final Logger logger = LoggerFactory.getLogger(BlobService.class);
     private final BlobServiceClient blobServiceClient;
-    private final ConstantValueConfig constantValueConfig;
+    private final String videoContainerName;
+    private final String imageContainerName;
+    private final String keywordsContainerName;
+    private final String profileImageContainerName;
+    private final String audioContainerName;
+    private final String tempVideoContainerName;
+    private final String azureFrontdoorUrl;
 
     public String uploadVideoGetRelativeUrl(File video) {
-        String fullUrl = uploadFileToBlob(video, constantValueConfig.videoContainerName);
+        String fullUrl = uploadFileToBlob(video, videoContainerName);
         return extractRelativePathFromBlobUrl(fullUrl);
     }
 
     public String uploadTempVideoGetFullUrl(File video) {
-        return uploadFileToBlob(video, constantValueConfig.tempVideoContainerName);
+        return uploadFileToBlob(video, tempVideoContainerName);
     }
 
     public String uploadAudio(File audio) {
-        return uploadFileToBlob(audio, constantValueConfig.audioContainerName);
+        return uploadFileToBlob(audio, audioContainerName);
     }
 
     public String uploadImage(File image, ContainerName containerName) {
         String container = switch (containerName) {
-            case PROFILE_IMAGE -> constantValueConfig.profileImageContainerName;
-            case IMAGE -> constantValueConfig.imageContainerName;
+            case PROFILE_IMAGE -> profileImageContainerName;
+            case IMAGE -> imageContainerName;
         };
         String fullUrl = uploadFileToBlob(image, container);
         return extractRelativePathFromBlobUrl(fullUrl);
@@ -70,8 +73,8 @@ public class BlobService {
     public String uploadKeywords(String contentString, String videoName) {
         byte[] byteArray = contentString.getBytes(StandardCharsets.UTF_8);
         try (InputStream dataStream = new ByteArrayInputStream(byteArray)) {
-            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(constantValueConfig.keywordsContainerName);
-            logger.info("the blobContainerClient initialized successfully, the containerName is " + constantValueConfig.keywordsContainerName);
+            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(keywordsContainerName);
+            logger.info("the blobContainerClient initialized successfully, the containerName is " + keywordsContainerName);
             String fileName = System.currentTimeMillis() + "-jsonArray";
             BlobClient blobClient = containerClient.getBlobClient(fileName);
             logger.info("start to upload keywords to blob storage, the video name is " + videoName);
@@ -108,7 +111,7 @@ public class BlobService {
      * @return
      */
     public String getCDNFullPath(String relativePath, String containerName) {
-        return constantValueConfig.azureFrontdoorUrl + "/" + relativePath;
+        return azureFrontdoorUrl + "/" + relativePath;
     }
 
     public File downloadFile(String blobUrl) {
