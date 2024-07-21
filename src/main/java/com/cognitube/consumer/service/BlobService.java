@@ -6,10 +6,9 @@ import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.cognitube.consumer.service.exception.CloudStorageException;
 import com.cognitube.consumer.enums.ContainerName;
+import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -23,33 +22,18 @@ import java.nio.charset.StandardCharsets;
  * @create: 2024-02-08 20:50
  **/
 @Service
+@AllArgsConstructor
 public class BlobService {
 
     private static final Logger logger = LoggerFactory.getLogger(BlobService.class);
     private final BlobServiceClient blobServiceClient;
-
-    @Value("${azure.storage.container-name-temp-video-container}")
-    private String tempVideoContainerName;
-
-    @Value("${azure.storage.container-name-video-container}")
-    private String videoContainerName;
-
-    @Value("${azure.storage.container-name-image-container}")
-    private String imageContainerName;
-
-    @Value("${azure.storage.container-name-keywords-container}")
-    private String keywordsContainerName;
-
-    @Value("${azure.frontdoor.url}")
-    private String azureFrontdoorUrl;
-
-    @Value("${azure.storage.container-name-profile-image-container}")
-    private String profileImageContainerName;
-
-    @Autowired
-    public BlobService(BlobServiceClient blobServiceClient) {
-        this.blobServiceClient = blobServiceClient;
-    }
+    private final String videoContainerName;
+    private final String imageContainerName;
+    private final String keywordsContainerName;
+    private final String profileImageContainerName;
+    private final String audioContainerName;
+    private final String tempVideoContainerName;
+    private final String azureFrontdoorUrl;
 
     public String uploadVideoGetRelativeUrl(File video) {
         String fullUrl = uploadFileToBlob(video, videoContainerName);
@@ -58,6 +42,10 @@ public class BlobService {
 
     public String uploadTempVideoGetFullUrl(File video) {
         return uploadFileToBlob(video, tempVideoContainerName);
+    }
+
+    public String uploadAudio(File audio) {
+        return uploadFileToBlob(audio, audioContainerName);
     }
 
     public String uploadImage(File image, ContainerName containerName) {

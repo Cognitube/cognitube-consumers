@@ -1,8 +1,7 @@
 package com.cognitube.consumer.config;
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
+import lombok.AllArgsConstructor;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -16,27 +15,25 @@ import java.util.Map;
 
 @EnableKafka
 @Configuration
+@AllArgsConstructor
 public class KafkaConsumerConfig {
 
-    @Value("${kafka.eventhub.namespace:}")
-    private String namespace;
-    @Value("${kafka.username}")
-    private String username;
-    @Value("${kafka.password}")
-    private String password;
+    private final String namespace;
+    private final String username;
+    private final String password;
 
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put("security.protocol", "SASL_SSL");
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, namespace + ".servicebus.windows.net:9093");
+        props.put(org.apache.kafka.clients.consumer.ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, namespace + ".servicebus.windows.net:9093");
         props.put("sasl.mechanism", "PLAIN");
         props.put("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"" + username + "\" password=\"" + password + "\";");
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "video-process-group");
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        props.put(org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(org.apache.kafka.clients.consumer.ConsumerConfig.GROUP_ID_CONFIG, "video-process-group");
+        props.put(org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(org.apache.kafka.clients.consumer.ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 
         return new DefaultKafkaConsumerFactory<>(props);
     }
@@ -44,8 +41,8 @@ public class KafkaConsumerConfig {
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+        factory.setConsumerFactory(consumerFactory());
         return factory;
     }
 }
