@@ -95,7 +95,7 @@ public class VideoProcessConsumer {
         } catch (Exception e) {
             //TODO: specify more exception types
             log.error("Failed to process video", e);
-            if (message != null && message.getRetryCount() > 3) {
+            if (message.getRetryCount() > 3) {
                 log.error("Failed to process video after 3 retries. Terminating processing for video.");
             } else {
                 message.setRetryCount(message.getRetryCount() + 1);

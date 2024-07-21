@@ -3,10 +3,10 @@ package com.cognitube.consumer.producer;
 import com.cognitube.consumer.consumer.dao.VideoUploadMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.Callback;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @Component
+@AllArgsConstructor
 public class VideoProcessProducer {
     // TODO: This producer is supposed to be expanded to send messages for other topics
 

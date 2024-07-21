@@ -20,7 +20,7 @@ import javax.sql.DataSource;
  * @date 2024/5/23 20:36:24
  */
 @Configuration
-@MapperScan({"com.cognitube.server.app.mapper"})
+@MapperScan({"com.cognitube.consumer.mapper"})
 public class MyBatisConfig {
 
     @Bean
@@ -37,7 +37,7 @@ public class MyBatisConfig {
         sessionFactory.setConfiguration(configuration);
 
         sessionFactory.setMapperLocations(
-                new PathMatchingResourcePatternResolver().getResources("classpath*:com/cognitube/server/mapper/*.xml")
+                new PathMatchingResourcePatternResolver().getResources("classpath*:com/cognitube/consumer/mapper/*.xml")
         );
 
         return sessionFactory.getObject();

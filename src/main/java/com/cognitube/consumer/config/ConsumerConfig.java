@@ -6,11 +6,11 @@ import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.BlobService;
 import com.cognitube.consumer.service.VideoEncodingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 
 /**
  * @author Haozhe Zhang
@@ -23,7 +23,17 @@ import org.springframework.data.redis.core.RedisTemplate;
 public class ConsumerConfig {
 
     @Bean
-    public final BlobService blobService(
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
+
+    @Bean
+    public AzureConfig azureConfig(@Value("${azure.storage.connection-string}") String connectionString) {
+        return new AzureConfig(connectionString);
+    }
+
+    @Bean
+    public BlobService blobService(
             BlobServiceClient blobServiceClient,
             @Value("${azure.storage.container-name-video-container}") String videoContainerName,
             @Value("${azure.storage.container-name-image-container}") String imageContainerName,
@@ -45,7 +55,7 @@ public class ConsumerConfig {
     }
 
     @Bean
-    public final VideoProcessConsumer videoProcessConsumer(
+    public VideoProcessConsumer videoProcessConsumer(
             ObjectMapper objectMapper,
             BlobService blobService,
             VideoProcessProducer videoProcessProducer,
@@ -68,7 +78,7 @@ public class ConsumerConfig {
     }
 
     @Bean
-    public final KafkaConsumerConfig kafkaConsumerConfig(
+    public KafkaConsumerConfig kafkaConsumerConfig(
             @Value("${kafka.eventhub.namespace}") String namespace,
             @Value("${kafka.username}") String username,
             @Value("${kafka.password}") String password
@@ -80,13 +90,24 @@ public class ConsumerConfig {
     }
 
     @Bean
-    public final VideoEncodingService videoEncodingService(
-            @Value("${application.encoding.default.bitrate}") int DEFAULT_AUDIO_BIT_RATE_KBPS,
-            @Value("${application.encoding.default.sampling-rate}") int DEFAULT_SAMPLING_RATE
+    public VideoEncodingService videoEncodingService(
+            @Value("${application.encoding.default.audio.bit.rate.kbps}") int DEFAULT_AUDIO_BIT_RATE_KBPS,
+            @Value("${application.encoding.default.sampling.rate}") int DEFAULT_SAMPLING_RATE
     ) {
         return new VideoEncodingService(
                 DEFAULT_AUDIO_BIT_RATE_KBPS,
                 DEFAULT_SAMPLING_RATE
+        );
+    }
+
+    @Bean
+    public VideoProcessProducer videoProcessProducer(
+            KafkaTemplate<String, String> kafkaTemplate,
+            ObjectMapper objectMapper
+    ) {
+        return new VideoProcessProducer(
+                kafkaTemplate,
+                objectMapper
         );
     }
 }
