@@ -82,7 +82,7 @@ public class VideoEncodingService {
     public File convertVideoToAudio(File videoFile) {
         boolean videoHasAudio = hasAudio(videoFile);
         if (!videoHasAudio) {
-            throw new NoAudioTrackException("The video does not have an audio track");
+            return null;
         }
 
         // Specify the output audio file

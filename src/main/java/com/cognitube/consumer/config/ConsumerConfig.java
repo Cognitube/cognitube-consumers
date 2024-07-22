@@ -35,13 +35,35 @@ public class ConsumerConfig {
             VideoProcessProducer videoProcessProducer,
             VideoProcessingService videoProcessingService
     ) {
-        return new VideoAiDataConsumer(objectMapper, videoMapper, redisTemplate, KAFKA_VIDEO_AI_TOPIC, videoProcessProducer, videoProcessingService);
+        return new VideoAiDataConsumer(
+                objectMapper,
+                videoMapper,
+                redisTemplate,
+                KAFKA_VIDEO_AI_TOPIC,
+                videoProcessProducer,
+                videoProcessingService
+        );
     }
 
     @Bean
     public VideoEncodeConsumer videoEncodeConsumer(
-            ObjectMapper objectMapper) {
-        return new VideoEncodeConsumer(objectMapper);
+            ObjectMapper objectMapper,
+            VideoEncodingService videoEncodingService,
+            BlobService blobService,
+            VideoMapper videoMapper,
+            @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC,
+            VideoProcessProducer videoProcessProducer,
+            VideoProcessingService videoProcessingService
+        ) {
+        return new VideoEncodeConsumer(
+                objectMapper,
+                videoEncodingService,
+                blobService,
+                videoMapper,
+                KAFKA_VIDEO_REENCODE_TOPIC,
+                videoProcessProducer,
+                videoProcessingService
+        );
     }
 
     @Bean
@@ -81,25 +103,25 @@ public class ConsumerConfig {
             ObjectMapper objectMapper,
             BlobService blobService,
             VideoProcessProducer videoProcessProducer,
-            RedisTemplate<String, String> redisTemplate,
             VideoEncodingService videoEncodingService,
             @Value("${kafka.video.process.topic}") String KAFKA_VIDEO_PROCESS_TOPIC,
-            @Value("${kafka.reencode.topic}") String KAFKA_REENCODE_TOPIC,
+            @Value("${kafka.video.reencode.topic}") String KAFKA_REENCODE_TOPIC,
             @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
             @Value("${application.keyword.service.url}") String keywordServiceUrl,
-            @Value("${azure.storage.blob.endpoint}") String blobEndpoint
+            @Value("${azure.storage.blob.endpoint}") String blobEndpoint,
+            VideoProcessingService videoProcessingService
     ) {
         return new VideoProcessConsumer(
                 objectMapper,
                 blobService,
                 videoProcessProducer,
-                redisTemplate,
                 videoEncodingService,
                 KAFKA_VIDEO_PROCESS_TOPIC,
                 KAFKA_REENCODE_TOPIC,
                 KAFKA_VIDEO_AI_TOPIC,
                 keywordServiceUrl,
-                blobEndpoint
+                blobEndpoint,
+                videoProcessingService
         );
     }
 
@@ -112,7 +134,8 @@ public class ConsumerConfig {
         return new KafkaConsumerConfig(
                 namespace,
                 username,
-                password);
+                password
+        );
     }
 
     @Bean
@@ -134,6 +157,21 @@ public class ConsumerConfig {
         return new VideoProcessProducer(
                 kafkaTemplate,
                 objectMapper
+        );
+    }
+
+    @Bean
+    public VideoProcessingService videoProcessingService(
+            VideoMapper videoMapper,
+            RedisTemplate<String, String> redisTemplate,
+            @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
+            @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC
+    ) {
+        return new VideoProcessingService(
+                videoMapper,
+                redisTemplate,
+                KAFKA_VIDEO_AI_TOPIC,
+                KAFKA_VIDEO_REENCODE_TOPIC
         );
     }
 }

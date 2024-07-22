@@ -6,6 +6,7 @@ import com.cognitube.consumer.consumer.dao.VideoUploadMessage;
 import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.BlobService;
 import com.cognitube.consumer.service.VideoEncodingService;
+import com.cognitube.consumer.service.VideoProcessingService;
 import com.cognitube.consumer.util.RedisKeys;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,18 +44,17 @@ import java.util.concurrent.TimeUnit;
 @Component
 @AllArgsConstructor
 public class VideoProcessConsumer {
-    private static final Double SEGMENT_DURATION_IN_MINUTE = 30.0;
 
     private final ObjectMapper objectMapper;
     private final BlobService blobService;
     private final VideoProcessProducer videoProcessProducer;
-    private final RedisTemplate<String, String> redisTemplate;
     private final VideoEncodingService videoEncodingService;
     private final String KAFKA_VIDEO_PROCESS_TOPIC;
     private final String KAFKA_VIDEO_REENCODE_TOPIC;
     private final String KAFKA_VIDEO_AI_TOPIC;
     private final String keywordServiceUrl;
     private final String blobEndpoint;
+    private final VideoProcessingService videoProcessingService;
 
     @KafkaListener(topics = "${kafka.video.process.topic}", groupId = "${kafka.video.process.group.id}")
     public void consumeProcessVideoMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
@@ -80,23 +80,35 @@ public class VideoProcessConsumer {
         File audioFile = null;
 
         try {
-            if (isVideoProcessedOrProcessing(message.getVideoId())) {
+            if (videoProcessingService.isVideoProcessedOrProcessing(message.getVideoId())) {
                 return;
             }
 
-            recordVideoProcessingStatus(message.getVideoId());
+            videoProcessingService.recordVideoProcessingStatus(message.getVideoId());
 
             log.info("Start processing video: {}", message.getVideoId());
             videoFile = getOriginalVideo(message.getVideoUrl());
 
             log.info("Start converting video to audio: {}", message.getVideoId());
             audioFile = videoEncodingService.convertVideoToAudio(videoFile);
-            String audioUrl = blobService.uploadAudio(audioFile);
+            if (audioFile == null) {
+                log.warn("Video does not have an audio track.");
+                videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), KAFKA_VIDEO_AI_TOPIC);
+            } else {
+                final String audioUrl = blobService.uploadAudio(audioFile);
+                log.info("Audio extracted. Stored at: {}", audioUrl);
 
-            log.info("Audio extracted. Stored at: {}", audioUrl);
-            createKeywordExtractionJob(audioUrl, message.getVideoId());
+                createKeywordExtractionJob(audioUrl, message.getVideoId());
+                log.info("Keyword extraction job created. Waiting for keywords to be extracted.");
+            }
 
-            log.info("Keyword extraction job created. Waiting for keywords to be extracted.");
+            sendMessageToEncodeKafkaGroup(
+                VideoEncodeMessage.builder()
+                    .setVideoId(message.getVideoId())
+                    .setVideoUrl(message.getVideoUrl())
+                    .setRetryCount(0)
+                    .build()
+            );
 
         } catch (Exception e) {
             //TODO: specify more exception types
@@ -115,26 +127,20 @@ public class VideoProcessConsumer {
                 });
             }
         } finally {
-            removeFile(videoFile);
-            removeFile(audioFile);
+            videoProcessingService.removeFile(videoFile);
+            videoProcessingService.removeFile(audioFile);
         }
     }
 
     // TODO
     private void sendMessageToEncodeKafkaGroup(VideoEncodeMessage subTaskMessage) {
+        videoProcessProducer.sendKafkaMessageAsync(subTaskMessage, KAFKA_VIDEO_REENCODE_TOPIC, (metadata, exception) -> {
+            if (exception != null) {
+                throw new RuntimeException("Failed to send video upload message", exception);
+            }
+        });
     }
 
-    private void recordVideoProcessingStatus(String videoId) {
-        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
-        try {
-            HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
-            hashOps.put(videoProcessStatusKey, KAFKA_VIDEO_REENCODE_TOPIC, "pending");
-            hashOps.put(videoProcessStatusKey, KAFKA_VIDEO_AI_TOPIC, "pending");
-            redisTemplate.expire(videoProcessStatusKey, 12, TimeUnit.HOURS);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private void createKeywordExtractionJob(String audioFileurl, String videoId) {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
@@ -152,35 +158,8 @@ public class VideoProcessConsumer {
         }
     }
 
-    private boolean isVideoProcessedOrProcessing(String videoId) {
-        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
-        boolean status;
-        try {
-            status = Boolean.TRUE.equals(redisTemplate.hasKey(videoProcessStatusKey));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return status;
-    }
-
     private File getOriginalVideo(String videoUrl) {
         return blobService.downloadFile(videoUrl);
-    }
-
-    public double getVideoDuration(File videoFile) {
-        try (FileChannelWrapper ch = NIOUtils.readableChannel(videoFile)) {
-            FrameGrab grab = FrameGrab.createFrameGrab(ch);
-            return grab.getVideoTrack().getMeta().getTotalDuration();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get video duration", e);
-        }
-    }
-
-    private void removeFile(File file) {
-        if (file != null && file.exists()) {
-            file.delete();
-        }
     }
 }
 

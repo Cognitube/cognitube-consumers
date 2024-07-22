@@ -63,7 +63,7 @@ public class VideoAiDataConsumer {
             videoMapper.updateVideo(video);
             log.info("Updated video ai data for video.");
 
-            recordVideoProcessingStatus(videoId);
+            videoProcessingService.recordVideoProcessingStatus(videoId, KAFKA_VIDEO_AI_TOPIC);
             videoProcessingService.updateVideoStatusIfDone(videoId);
         } catch (Exception e) {
             log.error("Failed to process video ai data", e);
@@ -84,15 +84,5 @@ public class VideoAiDataConsumer {
     }
 
 
-
-    private void recordVideoProcessingStatus(String videoId) {
-        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
-        try {
-            HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
-            hashOps.put(videoProcessStatusKey, KAFKA_VIDEO_AI_TOPIC, "done");
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
 }
