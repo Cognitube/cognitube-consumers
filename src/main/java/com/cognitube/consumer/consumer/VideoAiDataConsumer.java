@@ -1,19 +1,15 @@
 package com.cognitube.consumer.consumer;
 
 import com.cognitube.consumer.consumer.dao.VideoAiDataMessage;
-import com.cognitube.consumer.enums.VideoStatus;
 import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.model.Video;
 import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.VideoProcessingService;
-import com.cognitube.consumer.util.RedisKeys;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
@@ -25,7 +21,6 @@ public class VideoAiDataConsumer {
 
     private final ObjectMapper objectMapper;
     private final VideoMapper videoMapper;
-    private final RedisTemplate<String, String> redisTemplate;
     private final String KAFKA_VIDEO_AI_TOPIC;
     private final VideoProcessProducer videoProcessProducer;
     private final VideoProcessingService videoProcessingService;
@@ -47,7 +42,7 @@ public class VideoAiDataConsumer {
         }
 
         try {
-            if (videoProcessingService.isVideoProcessingStepDone(message.getVideoId(), KAFKA_VIDEO_AI_TOPIC)) {
+            if (videoProcessingService.isVideoProcessingStepDoneOrFailed(message.getVideoId(), KAFKA_VIDEO_AI_TOPIC)) {
                 return;
             }
 
@@ -69,6 +64,7 @@ public class VideoAiDataConsumer {
             log.error("Failed to process video ai data", e);
             if (message.getRetryCount() > 3) {
                 log.error("Failed to process video ai data after 3 retries. Terminating processing for video ai data.");
+                videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
             } else {
                 message.setRetryCount(message.getRetryCount() + 1);
                 final VideoAiDataMessage finalMessage = message;

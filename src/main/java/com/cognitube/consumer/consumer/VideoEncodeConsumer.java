@@ -1,7 +1,6 @@
 package com.cognitube.consumer.consumer;
 
 import com.cognitube.consumer.consumer.dao.VideoEncodeMessage;
-import com.cognitube.consumer.consumer.dao.VideoUploadMessage;
 import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.model.Video;
 import com.cognitube.consumer.producer.VideoProcessProducer;
@@ -74,6 +73,7 @@ public class VideoEncodeConsumer {
             log.error("Failed to reencode video", e);
             if (message.getRetryCount() > 3) {
                 log.error("Failed to reencode video after 3 retries. Terminating reencoding for video.");
+                videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
             } else {
                 message.setRetryCount(message.getRetryCount() + 1);
                 final VideoEncodeMessage finalMessage = message;

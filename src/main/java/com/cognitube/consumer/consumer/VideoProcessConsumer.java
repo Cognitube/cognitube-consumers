@@ -7,7 +7,6 @@ import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.BlobService;
 import com.cognitube.consumer.service.VideoEncodingService;
 import com.cognitube.consumer.service.VideoProcessingService;
-import com.cognitube.consumer.util.RedisKeys;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -18,20 +17,13 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.jcodec.api.FrameGrab;
-import org.jcodec.common.io.FileChannelWrapper;
-import org.jcodec.common.io.NIOUtils;
 import org.json.JSONObject;
 import org.slf4j.MDC;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
-
 
 /**
  * @author Yijing Yang
@@ -115,6 +107,7 @@ public class VideoProcessConsumer {
             log.error("Failed to process video", e);
             if (message.getRetryCount() > 3) {
                 log.error("Failed to process video after 3 retries. Terminating processing for video.");
+                videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
             } else {
                 message.setRetryCount(message.getRetryCount() + 1);
                 final VideoUploadMessage finalMessage = message;

@@ -30,7 +30,6 @@ public class ConsumerConfig {
     public VideoAiDataConsumer videoAiDataConsumer(
             ObjectMapper objectMapper,
             VideoMapper videoMapper,
-            RedisTemplate<String, String> redisTemplate,
             @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
             VideoProcessProducer videoProcessProducer,
             VideoProcessingService videoProcessingService
@@ -38,7 +37,6 @@ public class ConsumerConfig {
         return new VideoAiDataConsumer(
                 objectMapper,
                 videoMapper,
-                redisTemplate,
                 KAFKA_VIDEO_AI_TOPIC,
                 videoProcessProducer,
                 videoProcessingService

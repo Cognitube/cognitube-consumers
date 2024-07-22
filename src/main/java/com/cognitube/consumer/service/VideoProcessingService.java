@@ -48,13 +48,14 @@ public class VideoProcessingService {
             HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
             hashOps.put(videoProcessStatusKey, KAFKA_VIDEO_REENCODE_TOPIC, "pending");
             hashOps.put(videoProcessStatusKey, KAFKA_VIDEO_AI_TOPIC, "pending");
+            hashOps.put(videoProcessStatusKey, "status", "processing");
             redisTemplate.expire(videoProcessStatusKey, 12, TimeUnit.HOURS);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public boolean isVideoProcessingStepDone(String videoId, String topic) {
+    public boolean isVideoProcessingStepDoneOrFailed(String videoId, String topic) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         String status;
         try {
@@ -70,7 +71,7 @@ public class VideoProcessingService {
             throw new RuntimeException(e);
         }
 
-        return "done".equals(status);
+        return "done".equals(status) || "failed".equals(status);
     }
 
     public void recordVideoProcessingStatus(String videoId, String topic) {
@@ -78,6 +79,16 @@ public class VideoProcessingService {
         try {
             HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
             hashOps.put(videoProcessStatusKey, topic, "done");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void markVideoProcessingStatusAsFailed(String videoId) {
+        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        try {
+            HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
+            hashOps.put(videoProcessStatusKey, "status", "failed");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
