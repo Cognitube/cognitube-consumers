@@ -1,10 +1,14 @@
 package com.cognitube.consumer.config;
 
 import com.azure.storage.blob.BlobServiceClient;
+import com.cognitube.consumer.consumer.VideoAiDataConsumer;
+import com.cognitube.consumer.consumer.VideoEncodeConsumer;
 import com.cognitube.consumer.consumer.VideoProcessConsumer;
+import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.BlobService;
 import com.cognitube.consumer.service.VideoEncodingService;
+import com.cognitube.consumer.service.VideoProcessingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -21,6 +25,24 @@ import org.springframework.kafka.core.KafkaTemplate;
  */
 @Configuration
 public class ConsumerConfig {
+
+    @Bean
+    public VideoAiDataConsumer videoAiDataConsumer(
+            ObjectMapper objectMapper,
+            VideoMapper videoMapper,
+            RedisTemplate<String, String> redisTemplate,
+            @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
+            VideoProcessProducer videoProcessProducer,
+            VideoProcessingService videoProcessingService
+    ) {
+        return new VideoAiDataConsumer(objectMapper, videoMapper, redisTemplate, KAFKA_VIDEO_AI_TOPIC, videoProcessProducer, videoProcessingService);
+    }
+
+    @Bean
+    public VideoEncodeConsumer videoEncodeConsumer(
+            ObjectMapper objectMapper) {
+        return new VideoEncodeConsumer(objectMapper);
+    }
 
     @Bean
     public ObjectMapper objectMapper() {
@@ -62,6 +84,8 @@ public class ConsumerConfig {
             RedisTemplate<String, String> redisTemplate,
             VideoEncodingService videoEncodingService,
             @Value("${kafka.video.process.topic}") String KAFKA_VIDEO_PROCESS_TOPIC,
+            @Value("${kafka.reencode.topic}") String KAFKA_REENCODE_TOPIC,
+            @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
             @Value("${application.keyword.service.url}") String keywordServiceUrl,
             @Value("${azure.storage.blob.endpoint}") String blobEndpoint
     ) {
@@ -72,6 +96,8 @@ public class ConsumerConfig {
                 redisTemplate,
                 videoEncodingService,
                 KAFKA_VIDEO_PROCESS_TOPIC,
+                KAFKA_REENCODE_TOPIC,
+                KAFKA_VIDEO_AI_TOPIC,
                 keywordServiceUrl,
                 blobEndpoint
         );
