@@ -3,14 +3,20 @@ package com.cognitube.consumer.service;
 import com.cognitube.consumer.enums.VideoStatus;
 import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.model.Video;
+import com.cognitube.consumer.util.DateUtil;
 import com.cognitube.consumer.util.RedisKeys;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jcodec.api.FrameGrab;
+import org.jcodec.common.io.FileChannelWrapper;
+import org.jcodec.common.io.NIOUtils;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.time.LocalDate;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -30,6 +36,15 @@ public class VideoProcessingService {
     private final String KAFKA_VIDEO_AI_TOPIC;
     private final String KAFKA_VIDEO_REENCODE_TOPIC;
 
+    public double getVideoDuration(File videoFile) {
+        try (FileChannelWrapper ch = NIOUtils.readableChannel(videoFile)) {
+            FrameGrab grab = FrameGrab.createFrameGrab(ch);
+            return grab.getVideoTrack().getMeta().getTotalDuration();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get video duration", e);
+        }
+    }
+
     public boolean isVideoProcessedOrProcessing(String videoId) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         boolean status;
@@ -42,14 +57,25 @@ public class VideoProcessingService {
         return status;
     }
 
-    public void recordVideoProcessingStatus(String videoId) {
+    public void recordVideoProcessingStatus(String videoId, Long userId) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         try {
-            HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
+            final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
             hashOps.put(videoProcessStatusKey, KAFKA_VIDEO_REENCODE_TOPIC, "pending");
             hashOps.put(videoProcessStatusKey, KAFKA_VIDEO_AI_TOPIC, "pending");
             hashOps.put(videoProcessStatusKey, "status", "processing");
+            hashOps.put(videoProcessStatusKey, "userId", userId.toString());
             redisTemplate.expire(videoProcessStatusKey, 12, TimeUnit.HOURS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void recordVideoDuration(String videoId, double videoDuration) {
+        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        try {
+            final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
+            hashOps.put(videoProcessStatusKey, "videoDuration", String.valueOf(videoDuration));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -59,13 +85,13 @@ public class VideoProcessingService {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         String status;
         try {
-            boolean keyExists = Boolean.TRUE.equals(redisTemplate.hasKey(videoProcessStatusKey));
+            final boolean keyExists = Boolean.TRUE.equals(redisTemplate.hasKey(videoProcessStatusKey));
             if (!keyExists) {
                 // this happens when the temp table has expired in the middle of the process
                 throw new RuntimeException("Video process status key does not exist");
             }
 
-            HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
+            final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
             status = (String) hashOps.get(videoProcessStatusKey, topic);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -97,24 +123,34 @@ public class VideoProcessingService {
     public void updateVideoStatusIfDone(String videoId) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         try {
-            boolean keyExists = Boolean.TRUE.equals(redisTemplate.hasKey(videoProcessStatusKey));
+            final boolean keyExists = Boolean.TRUE.equals(redisTemplate.hasKey(videoProcessStatusKey));
             if (!keyExists) {
                 // this happens when the temp table has expired in the middle of the process
                 throw new RuntimeException("Video process status key does not exist");
             }
 
-            HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
-            String aiStatus = (String) hashOps.get(videoProcessStatusKey, KAFKA_VIDEO_AI_TOPIC);
-            String reencodeStatus = (String) hashOps.get(videoProcessStatusKey, KAFKA_VIDEO_REENCODE_TOPIC);
-            if (!"done".equals(aiStatus) || !"done".equals(reencodeStatus)) {
+            final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
+            final String aiStatus = (String) hashOps.get(videoProcessStatusKey, KAFKA_VIDEO_AI_TOPIC);
+            final String reencodeStatus = (String) hashOps.get(videoProcessStatusKey, KAFKA_VIDEO_REENCODE_TOPIC);
+            final String overallStatus = (String) hashOps.get(videoProcessStatusKey, "status");
+            final Long userId = Long.parseLong((String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "userId")));
+            final double videoDuration = Double.parseDouble((String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "videoDuration")));
+
+            if ("failed".equals(overallStatus) || "pending".equals(aiStatus) || "pending".equals(reencodeStatus)) {
                 return;
             }
 
-            Video video = Video.builder()
+            hashOps.put(videoProcessStatusKey, "status", "done");
+
+            final Video video = Video.builder()
                     .setId(videoId)
                     .setStatus(VideoStatus.OK)
                     .build();
             videoMapper.updateVideo(video);
+
+            String userWeeklyUploadLimitKey = RedisKeys.getUserWeeklyUploadLimitKey(userId, String.valueOf(DateUtil.getWeekOfYear(LocalDate.now())));
+            redisTemplate.opsForValue().increment(userWeeklyUploadLimitKey, videoDuration);
+            redisTemplate.expire(userWeeklyUploadLimitKey, 7, TimeUnit.DAYS);
             log.info("Video has been processed.");
         } catch (Exception e) {
             throw new RuntimeException(e);

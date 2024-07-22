@@ -76,10 +76,13 @@ public class VideoProcessConsumer {
                 return;
             }
 
-            videoProcessingService.recordVideoProcessingStatus(message.getVideoId());
+            videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), message.getUserId());
 
             log.info("Start processing video: {}", message.getVideoId());
             videoFile = getOriginalVideo(message.getVideoUrl());
+
+            final double videoDuration = videoProcessingService.getVideoDuration(videoFile);
+            videoProcessingService.recordVideoDuration(message.getVideoId(), videoDuration);
 
             log.info("Start converting video to audio: {}", message.getVideoId());
             audioFile = videoEncodingService.convertVideoToAudio(videoFile);

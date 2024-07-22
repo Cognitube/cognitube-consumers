@@ -55,7 +55,7 @@ public class VideoEncodeConsumer {
         try {
             tempVideoFile = blobService.downloadFile(message.getVideoUrl());
             processedVideo = reencodeVideo(tempVideoFile);
-            final double duration = getVideoDuration(processedVideo);
+            final double duration = videoProcessingService.getVideoDuration(processedVideo);
             final String processedVideoUrl = blobService.uploadTempVideoGetFullUrl(processedVideo);
             log.info("Reencoded video {} with duration {}", processedVideoUrl, duration);
 
@@ -96,14 +96,5 @@ public class VideoEncodeConsumer {
         File processedVideo = new File(videoFile.getParent(), newFileName);
         videoEncodingService.reencodeVideo(videoFile, processedVideo);
         return processedVideo;
-    }
-
-    private double getVideoDuration(File videoFile) {
-        try (FileChannelWrapper ch = NIOUtils.readableChannel(videoFile)) {
-            FrameGrab grab = FrameGrab.createFrameGrab(ch);
-            return grab.getVideoTrack().getMeta().getTotalDuration();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get video duration", e);
-        }
     }
 }
