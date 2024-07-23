@@ -22,7 +22,6 @@ public class VideoAiDataConsumer {
     private final ObjectMapper objectMapper;
     private final VideoMapper videoMapper;
     private final String KAFKA_VIDEO_AI_TOPIC;
-    private final VideoProcessProducer videoProcessProducer;
     private final VideoProcessingService videoProcessingService;
 
     @KafkaListener(topics = "${kafka.video.ai.topic}", groupId = "${kafka.video.process.group.id}")
@@ -71,7 +70,4 @@ public class VideoAiDataConsumer {
             videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
         }
     }
-
-
-
 }

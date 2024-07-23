@@ -2,6 +2,7 @@ package com.cognitube.consumer.consumer.dao;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author Haozhe Zhang
@@ -12,10 +13,11 @@ import lombok.Data;
  */
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class VideoAiDataMessage implements Message {
-    String videoId;
-    boolean success;
-    String error;
-    String keywordsUrl;
-    String transcriptUrl;
+    private String videoId;
+    private boolean success;
+    private String error;
+    private String keywordsUrl;
+    private String transcriptUrl;
 }

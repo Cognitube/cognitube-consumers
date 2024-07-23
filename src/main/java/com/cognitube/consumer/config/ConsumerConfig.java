@@ -42,14 +42,12 @@ public class ConsumerConfig {
             ObjectMapper objectMapper,
             VideoMapper videoMapper,
             @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
-            VideoProcessProducer videoProcessProducer,
             VideoProcessingService videoProcessingService
     ) {
         return new VideoAiDataConsumer(
                 objectMapper,
                 videoMapper,
                 KAFKA_VIDEO_AI_TOPIC,
-                videoProcessProducer,
                 videoProcessingService
         );
     }
