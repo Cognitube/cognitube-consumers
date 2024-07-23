@@ -79,6 +79,7 @@ public class VideoEncodeConsumer {
                 final VideoEncodeMessage finalMessage = message;
                 videoProcessProducer.sendKafkaMessageAsync(message, KAFKA_VIDEO_REENCODE_TOPIC, (metadata, exception) -> {
                     if (exception != null) {
+                        videoProcessingService.markVideoProcessingStatusAsFailed(finalMessage.getVideoId());
                         throw new RuntimeException("Failed to send video reencode message", exception);
                     } else {
                         log.info("Video reencode message sent successfully. Retry count: {}", finalMessage.getRetryCount());

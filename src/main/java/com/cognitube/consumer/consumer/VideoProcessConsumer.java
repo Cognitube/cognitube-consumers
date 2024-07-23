@@ -116,6 +116,7 @@ public class VideoProcessConsumer {
                 final VideoUploadMessage finalMessage = message;
                 videoProcessProducer.sendKafkaMessageAsync(message, KAFKA_VIDEO_PROCESS_TOPIC, (metadata, exception) -> {
                     if (exception != null) {
+                        videoProcessingService.markVideoProcessingStatusAsFailed(finalMessage.getVideoId());
                         throw new RuntimeException("Failed to send video upload message", exception);
                     } else {
                         log.info("Video upload message sent successfully. Retry count: {}", finalMessage.getRetryCount());

@@ -139,7 +139,12 @@ public class VideoProcessingService {
             final Long userId = Long.parseLong((String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "userId")));
             final double videoDuration = Double.parseDouble((String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "videoDuration")));
 
-            if ("failed".equals(overallStatus) || "pending".equals(aiStatus) || "pending".equals(reencodeStatus)) {
+            if ("failed".equals(overallStatus)) {
+                handleFailedProcessing(userId, videoName);
+                return;
+            }
+
+            if ("pending".equals(aiStatus) || "pending".equals(reencodeStatus)) {
                 return;
             }
 
@@ -162,6 +167,11 @@ public class VideoProcessingService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void handleFailedProcessing(Long userId, String videoName) {
+        final String notificationMessage = String.format("Your video %s has failed to process. Please try again later!", videoName);
+        notificationService.addSystemNotification(userId, notificationMessage);
     }
 
     public void removeFile(File file) {
