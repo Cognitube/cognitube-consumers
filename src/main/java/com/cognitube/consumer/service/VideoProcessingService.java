@@ -169,6 +169,7 @@ public class VideoProcessingService {
         }
     }
 
+    // TODO: add more handling for database record and temp files on blob
     private void handleFailedProcessing(Long userId, String videoName) {
         final String notificationMessage = String.format("Your video %s has failed to process. Please try again later!", videoName);
         notificationService.addSystemNotification(userId, notificationMessage);

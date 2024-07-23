@@ -129,11 +129,13 @@ public class VideoProcessConsumer {
         }
     }
 
-    // TODO
     private void sendMessageToEncodeKafkaGroup(VideoEncodeMessage subTaskMessage) {
         videoProcessProducer.sendKafkaMessageAsync(subTaskMessage, KAFKA_VIDEO_REENCODE_TOPIC, (metadata, exception) -> {
             if (exception != null) {
+                videoProcessingService.markVideoProcessingStatusAsFailed(subTaskMessage.getVideoId());
                 throw new RuntimeException("Failed to send video upload message", exception);
+            } else {
+                log.info("Video reencoding message sent successfully.");
             }
         });
     }
