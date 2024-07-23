@@ -14,7 +14,8 @@ import lombok.Data;
 @AllArgsConstructor
 public class VideoAiDataMessage implements Message {
     String videoId;
+    boolean success;
+    String error;
     String keywordsUrl;
     String transcriptUrl;
-    Integer retryCount;
 }

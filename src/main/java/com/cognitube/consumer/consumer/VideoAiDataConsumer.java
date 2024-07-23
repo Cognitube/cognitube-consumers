@@ -46,6 +46,12 @@ public class VideoAiDataConsumer {
                 return;
             }
 
+            final boolean isAiProcessSuccessful = message.isSuccess();
+            if (!isAiProcessSuccessful) {
+                final String error = message.getError();
+                throw new Exception(error);
+            }
+
             final String videoId = message.getVideoId();
             final String keywordsUrl = message.getKeywordsUrl();
             final String transcriptUrl = message.getTranscriptUrl();
@@ -62,20 +68,7 @@ public class VideoAiDataConsumer {
             videoProcessingService.updateVideoStatusIfDone(videoId);
         } catch (Exception e) {
             log.error("Failed to process video ai data", e);
-            if (message.getRetryCount() > 3) {
-                log.error("Failed to process video ai data after 3 retries. Terminating processing for video ai data.");
-                videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
-            } else {
-                message.setRetryCount(message.getRetryCount() + 1);
-                final VideoAiDataMessage finalMessage = message;
-                videoProcessProducer.sendKafkaMessageAsync(message, KAFKA_VIDEO_AI_TOPIC, (metadata, exception) -> {
-                    if (exception != null) {
-                        throw new RuntimeException("Failed to send video ai data message", exception);
-                    } else {
-                        log.info("Video upload message sent successfully. Retry count: {}", finalMessage.getRetryCount());
-                    }
-                });
-            }
+            videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
         }
     }
 
