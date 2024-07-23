@@ -17,4 +17,5 @@ public class VideoUploadMessage implements Message {
     private String videoUrl;
     private Long userId;
     private Integer retryCount;
+    private String videoName;
 }

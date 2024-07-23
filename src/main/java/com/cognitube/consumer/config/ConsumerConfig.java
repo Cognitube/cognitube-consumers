@@ -4,9 +4,11 @@ import com.azure.storage.blob.BlobServiceClient;
 import com.cognitube.consumer.consumer.VideoAiDataConsumer;
 import com.cognitube.consumer.consumer.VideoEncodeConsumer;
 import com.cognitube.consumer.consumer.VideoProcessConsumer;
+import com.cognitube.consumer.mapper.NotificationMapper;
 import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.BlobService;
+import com.cognitube.consumer.service.NotificationService;
 import com.cognitube.consumer.service.VideoEncodingService;
 import com.cognitube.consumer.service.VideoProcessingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +27,15 @@ import org.springframework.kafka.core.KafkaTemplate;
  */
 @Configuration
 public class ConsumerConfig {
+
+    @Bean
+    public NotificationService notificationService(
+            NotificationMapper notificationMapper
+    ) {
+        return new NotificationService(
+                notificationMapper
+        );
+    }
 
     @Bean
     public VideoAiDataConsumer videoAiDataConsumer(
@@ -163,13 +174,15 @@ public class ConsumerConfig {
             VideoMapper videoMapper,
             RedisTemplate<String, String> redisTemplate,
             @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
-            @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC
+            @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC,
+            NotificationService notificationService
     ) {
         return new VideoProcessingService(
                 videoMapper,
                 redisTemplate,
                 KAFKA_VIDEO_AI_TOPIC,
-                KAFKA_VIDEO_REENCODE_TOPIC
+                KAFKA_VIDEO_REENCODE_TOPIC,
+                notificationService
         );
     }
 }

@@ -35,6 +35,7 @@ public class VideoProcessingService {
     private final RedisTemplate<String, String> redisTemplate;
     private final String KAFKA_VIDEO_AI_TOPIC;
     private final String KAFKA_VIDEO_REENCODE_TOPIC;
+    private final NotificationService notificationService;
 
     public double getVideoDuration(File videoFile) {
         try (FileChannelWrapper ch = NIOUtils.readableChannel(videoFile)) {
@@ -57,13 +58,14 @@ public class VideoProcessingService {
         return status;
     }
 
-    public void recordVideoProcessingStatus(String videoId, Long userId) {
+    public void recordVideoProcessingStatus(String videoId, Long userId, String videoName) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         try {
             final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
             hashOps.put(videoProcessStatusKey, KAFKA_VIDEO_REENCODE_TOPIC, "pending");
             hashOps.put(videoProcessStatusKey, KAFKA_VIDEO_AI_TOPIC, "pending");
             hashOps.put(videoProcessStatusKey, "status", "processing");
+            hashOps.put(videoProcessStatusKey, "videoName", videoName);
             hashOps.put(videoProcessStatusKey, "userId", userId.toString());
             redisTemplate.expire(videoProcessStatusKey, 12, TimeUnit.HOURS);
         } catch (Exception e) {
@@ -133,6 +135,7 @@ public class VideoProcessingService {
             final String aiStatus = (String) hashOps.get(videoProcessStatusKey, KAFKA_VIDEO_AI_TOPIC);
             final String reencodeStatus = (String) hashOps.get(videoProcessStatusKey, KAFKA_VIDEO_REENCODE_TOPIC);
             final String overallStatus = (String) hashOps.get(videoProcessStatusKey, "status");
+            final String videoName = (String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "videoName"));
             final Long userId = Long.parseLong((String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "userId")));
             final double videoDuration = Double.parseDouble((String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "videoDuration")));
 
@@ -148,9 +151,13 @@ public class VideoProcessingService {
                     .build();
             videoMapper.updateVideo(video);
 
-            String userWeeklyUploadLimitKey = RedisKeys.getUserWeeklyUploadLimitKey(userId, String.valueOf(DateUtil.getWeekOfYear(LocalDate.now())));
+            final String userWeeklyUploadLimitKey = RedisKeys.getUserWeeklyUploadLimitKey(userId, String.valueOf(DateUtil.getWeekOfYear(LocalDate.now())));
             redisTemplate.opsForValue().increment(userWeeklyUploadLimitKey, videoDuration);
             redisTemplate.expire(userWeeklyUploadLimitKey, 7, TimeUnit.DAYS);
+
+            final String notificationMessage = String.format("Your video %s has been successfully uploaded and processed!", videoName);
+            notificationService.addSystemNotification(userId, notificationMessage);
+
             log.info("Video has been processed.");
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -76,7 +76,7 @@ public class VideoProcessConsumer {
                 return;
             }
 
-            videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), message.getUserId());
+            videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), message.getUserId(), message.getVideoName());
 
             log.info("Start processing video: {}", message.getVideoId());
             videoFile = getOriginalVideo(message.getVideoUrl());
