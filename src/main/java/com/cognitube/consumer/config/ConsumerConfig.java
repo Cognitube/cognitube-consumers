@@ -115,7 +115,6 @@ public class ConsumerConfig {
             @Value("${kafka.video.reencode.topic}") String KAFKA_REENCODE_TOPIC,
             @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
             @Value("${application.keyword.service.url}") String keywordServiceUrl,
-            @Value("${azure.storage.blob.endpoint}") String blobEndpoint,
             VideoProcessingService videoProcessingService
     ) {
         return new VideoProcessConsumer(
@@ -127,7 +126,6 @@ public class ConsumerConfig {
                 KAFKA_REENCODE_TOPIC,
                 KAFKA_VIDEO_AI_TOPIC,
                 keywordServiceUrl,
-                blobEndpoint,
                 videoProcessingService
         );
     }
@@ -144,6 +142,20 @@ public class ConsumerConfig {
                 password
         );
     }
+
+    @Bean
+    public KafkaProducerConfig kafkaProducerConfig(
+            @Value("${kafka.eventhub.namespace}") String namespace,
+            @Value("${kafka.username}") String username,
+            @Value("${kafka.password}") String password
+    ) {
+        return new KafkaProducerConfig(
+                namespace,
+                username,
+                password
+        );
+    }
+
 
     @Bean
     public VideoEncodingService videoEncodingService(

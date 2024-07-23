@@ -3,6 +3,7 @@ package com.cognitube.consumer.consumer.dao;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author Yijing Yang
@@ -13,9 +14,10 @@ import lombok.Data;
  */
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder(builderClassName = "Builder", setterPrefix = "set")
 public class VideoEncodeMessage implements Message {
-    String videoId;
-    String videoUrl;
-    Integer retryCount;
+    private String videoId;
+    private String videoUrl;
+    private Integer retryCount;
 }

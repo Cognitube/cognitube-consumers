@@ -110,7 +110,7 @@ public class VideoEncodingService {
                 audioFile.getAbsolutePath()
         );
 
-        log.error("command: " + String.join(" ", command));
+        log.info("command: " + String.join(" ", command));
         // 使用 ProcessBuilder 执行命令
         ProcessBuilder builder = new ProcessBuilder(command);
         builder.redirectErrorStream(true);  // 将错误输出重定向到标准输出

@@ -45,7 +45,6 @@ public class VideoProcessConsumer {
     private final String KAFKA_VIDEO_REENCODE_TOPIC;
     private final String KAFKA_VIDEO_AI_TOPIC;
     private final String keywordServiceUrl;
-    private final String blobEndpoint;
     private final VideoProcessingService videoProcessingService;
 
     @KafkaListener(topics = "${kafka.video.process.topic}", groupId = "${kafka.video.process.group.id}")
@@ -140,13 +139,13 @@ public class VideoProcessConsumer {
         });
     }
 
-
     private void createKeywordExtractionJob(String audioFileurl, String videoId) {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            final HttpPost uploadFile = new HttpPost(keywordServiceUrl + "/v1/get-keywords");
+            final HttpPost uploadFile = new HttpPost(keywordServiceUrl + "/v1/transcription/create");
 
             final JSONObject json = new JSONObject();
-            json.put("url", blobEndpoint + "/" + audioFileurl);
+            json.put("videoId", videoId);
+            json.put("audioUrl", audioFileurl);
 
             final StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
             uploadFile.setEntity(entity);

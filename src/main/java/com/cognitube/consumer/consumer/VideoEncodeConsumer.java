@@ -53,10 +53,10 @@ public class VideoEncodeConsumer {
             tempVideoFile = blobService.downloadFile(message.getVideoUrl());
             processedVideo = reencodeVideo(tempVideoFile);
             final double duration = videoProcessingService.getVideoDuration(processedVideo);
-            final String processedVideoUrl = blobService.uploadTempVideoGetFullUrl(processedVideo);
+            final String processedVideoUrl = blobService.uploadVideoGetRelativeUrl(processedVideo);
             log.info("Reencoded video {} with duration {}", processedVideoUrl, duration);
 
-            Video video = Video.builder()
+            final Video video = Video.builder()
                     .setId(message.getVideoId())
                     .setFileLink(processedVideoUrl)
                     .setLength(duration)
@@ -90,8 +90,8 @@ public class VideoEncodeConsumer {
     }
 
     private File reencodeVideo(File videoFile) {
-        String newFileName = "processed_" + UUID.randomUUID() + ".mp4";
-        File processedVideo = new File(videoFile.getParent(), newFileName);
+        final String newFileName = "processed_" + UUID.randomUUID() + ".mp4";
+        final File processedVideo = new File(videoFile.getParent(), newFileName);
         videoEncodingService.reencodeVideo(videoFile, processedVideo);
         return processedVideo;
     }

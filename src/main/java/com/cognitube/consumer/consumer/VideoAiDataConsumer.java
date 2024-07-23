@@ -3,7 +3,6 @@ package com.cognitube.consumer.consumer;
 import com.cognitube.consumer.consumer.dao.VideoAiDataMessage;
 import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.model.Video;
-import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.VideoProcessingService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +39,7 @@ public class VideoAiDataConsumer {
             return;
         }
 
+        String videoId = null;
         try {
             if (videoProcessingService.isVideoProcessingStepDoneOrFailed(message.getVideoId(), KAFKA_VIDEO_AI_TOPIC)) {
                 return;
@@ -51,23 +51,24 @@ public class VideoAiDataConsumer {
                 throw new Exception(error);
             }
 
-            final String videoId = message.getVideoId();
+            videoId = message.getVideoId();
             final String keywordsUrl = message.getKeywordsUrl();
             final String transcriptUrl = message.getTranscriptUrl();
             final Video video = Video.builder()
-                    .setId(videoId).
-                    setTranscriptLink(transcriptUrl).
-                    setKeywordsLink(keywordsUrl)
+                    .setId(videoId)
+                    .setTranscriptLink(transcriptUrl)
+                    .setKeywordsLink(keywordsUrl)
                     .build();
 
             videoMapper.updateVideo(video);
             log.info("Updated video ai data for video.");
-
-            videoProcessingService.recordVideoProcessingStatus(videoId, KAFKA_VIDEO_AI_TOPIC);
-            videoProcessingService.updateVideoStatusIfDone(videoId);
         } catch (Exception e) {
             log.error("Failed to process video ai data", e);
-            videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
+        } finally {
+            // We don't want to fail the processing for the video if the AI data processing fails
+            // since some videos may not have dialogue or keywords
+            videoProcessingService.recordVideoProcessingStatus(videoId, KAFKA_VIDEO_AI_TOPIC);
+            videoProcessingService.updateVideoStatusIfDone(videoId);
         }
     }
 }
