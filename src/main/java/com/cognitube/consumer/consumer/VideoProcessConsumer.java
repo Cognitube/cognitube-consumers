@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -42,9 +43,9 @@ public class VideoProcessConsumer {
     private final VideoProcessProducer videoProcessProducer;
     private final VideoEncodingService videoEncodingService;
     private final String KAFKA_VIDEO_PROCESS_TOPIC;
-    private final String KAFKA_VIDEO_REENCODE_TOPIC;
     private final String KAFKA_VIDEO_AI_TOPIC;
     private final String keywordServiceUrl;
+    private final String transcodingServiceUrl;
     private final VideoProcessingService videoProcessingService;
 
     @KafkaListener(topics = "${kafka.video.process.topic}", groupId = "${kafka.video.process.group.id}")
@@ -78,6 +79,8 @@ public class VideoProcessConsumer {
             videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), message.getUserId(), message.getVideoName());
 
             log.info("Start processing video: {}", message.getVideoId());
+            createVideoTranscodingJob(message.getVideoUrl(), message.getVideoId());
+
             videoFile = getOriginalVideo(message.getVideoUrl());
 
             final double videoDuration = videoProcessingService.getVideoDuration(videoFile);
@@ -96,13 +99,6 @@ public class VideoProcessConsumer {
                 log.info("Keyword extraction job created. Waiting for keywords to be extracted.");
             }
 
-            sendMessageToEncodeKafkaGroup(
-                VideoEncodeMessage.builder()
-                    .setVideoId(message.getVideoId())
-                    .setVideoUrl(message.getVideoUrl())
-                    .setRetryCount(0)
-                    .build()
-            );
 
         } catch (Exception e) {
             //TODO: specify more exception types
@@ -128,15 +124,25 @@ public class VideoProcessConsumer {
         }
     }
 
-    private void sendMessageToEncodeKafkaGroup(VideoEncodeMessage subTaskMessage) {
-        videoProcessProducer.sendKafkaMessageAsync(subTaskMessage, KAFKA_VIDEO_REENCODE_TOPIC, (metadata, exception) -> {
-            if (exception != null) {
-                videoProcessingService.markVideoProcessingStatusAsFailed(subTaskMessage.getVideoId());
-                throw new RuntimeException("Failed to send video upload message", exception);
-            } else {
-                log.info("Video reencoding message sent successfully.");
+    private void createVideoTranscodingJob(String videoUrl, String videoId) {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            final HttpPost request = new HttpPost(transcodingServiceUrl + "/v1/transcode");
+
+            final JSONObject json = new JSONObject();
+            json.put("videoId", videoId);
+            json.put("videoUrl", videoUrl);
+
+            final StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
+            request.setEntity(entity);
+
+            HttpResponse response = httpClient.execute(request);
+            if (response.getStatusLine().getStatusCode() != 200) {
+                log.error("Failed to send transcoding request {}", response.getEntity().getContent().toString());
+                throw new RuntimeException("Failed to send transcoding request");
             }
-        });
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send transcription request", e);
+        }
     }
 
     private void createKeywordExtractionJob(String audioFileurl, String videoId) {

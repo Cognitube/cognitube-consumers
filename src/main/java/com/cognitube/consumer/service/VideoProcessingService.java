@@ -153,6 +153,7 @@ public class VideoProcessingService {
             final Video video = Video.builder()
                     .setId(videoId)
                     .setStatus(VideoStatus.OK)
+                    .setLength(videoDuration)
                     .build();
             videoMapper.updateVideo(video);
 

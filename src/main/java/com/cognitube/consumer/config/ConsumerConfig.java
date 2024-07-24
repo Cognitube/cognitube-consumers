@@ -55,20 +55,14 @@ public class ConsumerConfig {
     @Bean
     public VideoEncodeConsumer videoEncodeConsumer(
             ObjectMapper objectMapper,
-            VideoEncodingService videoEncodingService,
-            BlobService blobService,
             VideoMapper videoMapper,
             @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC,
-            VideoProcessProducer videoProcessProducer,
             VideoProcessingService videoProcessingService
         ) {
         return new VideoEncodeConsumer(
                 objectMapper,
-                videoEncodingService,
-                blobService,
                 videoMapper,
                 KAFKA_VIDEO_REENCODE_TOPIC,
-                videoProcessProducer,
                 videoProcessingService
         );
     }
@@ -112,9 +106,9 @@ public class ConsumerConfig {
             VideoProcessProducer videoProcessProducer,
             VideoEncodingService videoEncodingService,
             @Value("${kafka.video.process.topic}") String KAFKA_VIDEO_PROCESS_TOPIC,
-            @Value("${kafka.video.reencode.topic}") String KAFKA_REENCODE_TOPIC,
             @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
             @Value("${application.keyword.service.url}") String keywordServiceUrl,
+            @Value("${application.transcoding.service.url}") String transcodingServiceUrl,
             VideoProcessingService videoProcessingService
     ) {
         return new VideoProcessConsumer(
@@ -123,9 +117,9 @@ public class ConsumerConfig {
                 videoProcessProducer,
                 videoEncodingService,
                 KAFKA_VIDEO_PROCESS_TOPIC,
-                KAFKA_REENCODE_TOPIC,
                 KAFKA_VIDEO_AI_TOPIC,
                 keywordServiceUrl,
+                transcodingServiceUrl,
                 videoProcessingService
         );
     }

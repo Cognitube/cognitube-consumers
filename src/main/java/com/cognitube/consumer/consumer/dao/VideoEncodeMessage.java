@@ -19,5 +19,6 @@ import lombok.NoArgsConstructor;
 public class VideoEncodeMessage implements Message {
     private String videoId;
     private String videoUrl;
-    private Integer retryCount;
+    private boolean success;
+    private String error;
 }

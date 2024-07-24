@@ -26,53 +26,6 @@ public class VideoEncodingService {
 
     private final int DEFAULT_AUDIO_BIT_RATE_KBPS;
     private final int DEFAULT_SAMPLING_RATE;
-
-    /**
-     * Re-encode a video file to a standard format
-     * @param source
-     * @param target
-     */
-    public void reencodeVideo(File source, File target) {
-        // Build the ffmpeg command with detailed comments for each option
-        List<String> command = Arrays.asList(
-                "ffmpeg",
-                "-y", // -y: Overwrite output files without asking
-                "-i", source.getAbsolutePath(), // -i: Input file path
-                "-c:v", "libx264", // -c:v: Video codec, use H.264 codec
-                "-b:v", "800k", // -b:v: Video bitrate, set video bitrate to 800 kbps
-                "-r", "30", // -r: Frame rate, set frame rate to 30 fps
-                "-c:a", "aac", // -c:a: Audio codec, use AAC codec
-                "-b:a", "128k", // -b:a: Audio bitrate, set audio bitrate to 128 kbps
-                "-ac", "2", // -ac: Audio channels, set number of audio channels to 2 (stereo)
-                "-ar", "44100", // -ar: Audio sampling rate, set audio sampling rate to 44100 Hz
-                "-threads", "0", // -threads: Automatically determine the number of threads to use
-                target.getAbsolutePath() // Output file path
-        );
-
-        log.info("command: " + String.join(" ", command));
-        // Use ProcessBuilder to execute the ffmpeg command
-        ProcessBuilder builder = new ProcessBuilder(command);
-        builder.redirectErrorStream(true); // Redirect error stream to standard output
-
-        try {
-            Process process = builder.start();
-            // Read and print the output from the command
-            StreamGobbler outputGobbler = new StreamGobbler(process.getInputStream(), "OUTPUT", false);
-            StreamGobbler errorGobbler = new StreamGobbler(process.getErrorStream(), "ERROR", false);
-            outputGobbler.start();
-            errorGobbler.start();
-
-            int exitCode = process.waitFor(); // Wait for the process to complete
-            outputGobbler.join();
-            errorGobbler.join();
-            if (exitCode != 0) {
-                throw new RuntimeException("ffmpeg exited with error code " + exitCode);
-            }
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Failed to execute ffmpeg command", e);
-        }
-    }
-
     /**
      * Extract audio from a video file
      * @param videoFile
