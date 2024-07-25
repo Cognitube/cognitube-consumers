@@ -43,14 +43,4 @@ ENV KAFKA_VIDEO_PROCESS_TOPIC=video-process
 ENV KAFKA_VIDEO_PROCESS_GROUP_ID=video-process-group
 ENV KAFKA_EVENTHUB_USERNAME=\$ConnectionString
 
-ENV SPRING_DATASOURCE_URL="jdbc:postgresql://cognitube-postgres-dev.postgres.database.azure.com:5432/postgres?sslmode=require"
-ENV SPRING_DATASOURCE_USERNAME=cognitube_dev
-ENV SPRING_DATASOURCE_PASSWORD=Password!
-
-ENV SPRING_REDIS_HOST=cognitube-redis-dev.redis.cache.windows.net
-ENV SPRING_REDIS_PORT=6380
-ENV SPRING_REDIS_PASSWORD="diQfY2IYUyj3igh5zu1kLz0vc2uXNMruxAzCaIVwr10="
-ENV SPRING_REDIS_USE_SSL=true
-ENV SPRING_REDIS_DATABASE=0
-
 ENTRYPOINT [ "java", "-jar", "/usr/local/lib/app.jar" ]
