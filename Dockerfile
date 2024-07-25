@@ -41,6 +41,7 @@ ENV APPLICATION_ADMIN_URL=https://cognitube-admin.thankfulfield-7c1523f0.eastus.
 ENV KAFKA_EVENTHUB_NAMESPACE=cognitube-kafka
 ENV KAFKA_VIDEO_PROCESS_TOPIC=video-process
 ENV KAFKA_VIDEO_AI_TOPIC=video-ai
+ENV KAFKA_VIDEO_REENCODE_TOPIC=video-reencode
 ENV KAFKA_VIDEO_PROCESS_GROUP_ID=video-process-group
 ENV KAFKA_EVENTHUB_USERNAME=\$ConnectionString
 
