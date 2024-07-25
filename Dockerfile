@@ -10,7 +10,7 @@ FROM amazoncorretto:17-alpine
 RUN apk add --no-cache ffmpeg
 RUN chmod 1777 /tmp
 
-RUN mkdir /home/app/tempfiles
+RUN mkdir -p /home/app/tempfiles
 
 COPY --from=build /home/app/target/*.jar /usr/local/lib/app.jar
 
