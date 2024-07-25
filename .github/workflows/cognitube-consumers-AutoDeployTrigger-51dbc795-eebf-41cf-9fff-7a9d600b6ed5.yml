@@ -1,0 +1,47 @@
+name: Trigger auto deployment for cognitube-consumers
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ feat/reencode-consumer ]
+    paths:
+    - '**'
+    - '.github/workflows/cognitube-consumers-AutoDeployTrigger-51dbc795-eebf-41cf-9fff-7a9d600b6ed5.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.COGNITUBECONSUMERS_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.COGNITUBECONSUMERS_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.COGNITUBECONSUMERS_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }} 
+          registryUrl: cogregdev.azurecr.io
+          registryUsername: ${{ secrets.COGNITUBECONSUMERS_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.COGNITUBECONSUMERS_REGISTRY_PASSWORD }}
+          containerAppName: cognitube-consumers
+          resourceGroup: Cognitube
+          imageToBuild: cogregdev.azurecr.io/cognitube-consumers:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
