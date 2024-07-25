@@ -3,11 +3,11 @@
 <mapper namespace="com.cognitube.consumer.mapper.VideoMapper">
 
   <sql id="videoFields">
-    id, title, description, file_link, cover_image_link, author_id, length, date_created, keywords_link, audio_link, status
+    id, title, description, file_link, cover_image_link, author_id, length, date_created, keywords_link, audio_link, status, transcript_link
   </sql>
 
   <sql id="insertFields">
-    title, description, file_link, cover_image_link, author_id, length, keywords_link, audio_link, status
+    title, description, file_link, cover_image_link, author_id, length, keywords_link, audio_link, status, transcript_link
   </sql>
 
   <update id="updateVideo">
@@ -23,6 +23,7 @@
       <if test="status != null">status = #{status},</if>
       <if test="audioLink != null">audio_link = #{audioLink},</if>
       <if test="isDeleted != null">is_deleted = #{isDeleted},</if>
+      <if test="transcriptLink != null">transcript_link = #{transcriptLink},</if>
       id = id
     WHERE id = #{id}
     </update>

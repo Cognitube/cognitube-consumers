@@ -1,24 +1,23 @@
 package com.cognitube.consumer.consumer.dao;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * @author Yijing Yang
+ * @author Haozhe Zhang
  * @version 1.0
- * @project consumer
- * @description Message for video encode subtasks
- * @date 2024/7/10 20:20:20
+ * @project cognitube-consumers
+ * @description For processing ai results from ai service
+ * @date 2024/7/21 21:15:55
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder(builderClassName = "Builder", setterPrefix = "set")
-public class VideoEncodeMessage implements Message {
+public class VideoAiDataMessage implements Message {
     private String videoId;
-    private String videoUrl;
     private boolean success;
     private String error;
+    private String keywordsUrl;
+    private String transcriptUrl;
 }
