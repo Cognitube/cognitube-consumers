@@ -86,7 +86,9 @@ public class ConsumerConfig {
             @Value("${azure.storage.container-name-profile-image-container}") String profileImageContainerName,
             @Value("${azure.storage.container-name-audio-container}") String audioContainerName,
             @Value("${azure.storage.container-name-temp-video-container}") String tempVideoContainerName,
-            @Value("${azure.frontdoor.url}") String azureFrontdoorUrl) {
+            @Value("${azure.frontdoor.url}") String azureFrontdoorUrl,
+            @Value("${CUSTOM_TEMP_DIR}") String CUSTOM_TEMP_DIR
+    ) {
         return new BlobService(
                 blobServiceClient,
                 videoContainerName,
@@ -95,7 +97,8 @@ public class ConsumerConfig {
                 profileImageContainerName,
                 audioContainerName,
                 tempVideoContainerName,
-                azureFrontdoorUrl
+                azureFrontdoorUrl,
+                CUSTOM_TEMP_DIR
         );
     }
 

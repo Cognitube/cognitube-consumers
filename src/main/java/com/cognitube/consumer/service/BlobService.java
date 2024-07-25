@@ -6,6 +6,7 @@ import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.cognitube.consumer.service.exception.CloudStorageException;
 import com.cognitube.consumer.enums.ContainerName;
+import com.cognitube.consumer.util.FileNameGenerator;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ public class BlobService {
     private final String audioContainerName;
     private final String tempVideoContainerName;
     private final String azureFrontdoorUrl;
+    private final String CUSTOM_TEMP_DIR;
 
     public String uploadVideoGetRelativeUrl(File video) {
         String fullUrl = uploadFileToBlob(video, videoContainerName);
@@ -124,7 +126,8 @@ public class BlobService {
             BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
             BlobClient blobClient = containerClient.getBlobClient(blobName);
 
-            File tempFile = File.createTempFile("download-", ".tmp");
+            String randomFileName = FileNameGenerator.generateUniqueFileName("downloaded-", ".tmp");
+            File tempFile = new File(CUSTOM_TEMP_DIR + randomFileName);
             try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
                 blobClient.download(outputStream);
             }
