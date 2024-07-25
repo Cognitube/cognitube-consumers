@@ -27,7 +27,7 @@ ENV APPLICATION_AUDIO_MAX_SIZE=26214400
 
 ENV AZURE_FRONTDOOR_URL=https://cognitube-hfegcsabcrgybtcw.z01.azurefd.net
 ENV APPLICATION_KEYWORD_SERVICE_URL=https://cognitube-keywords-service.azurewebsites.net/api
-ENV APPLICATION_TRANSCODING_SERVICE_URL=https://cognitube-transcoding-service.azurewebsites.net/api
+ENV APPLICATION_TRANSCODING_SERVICE_URL=https://cognitube-transcoding-service.internal.thankfulfield-7c1523f0.eastus.azurecontainerapps.io/api
 
 ENV SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID=906351348030-8h4si5c0r98qsi1610b16sn0itrdchih.apps.googleusercontent.com
 ENV SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET=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
