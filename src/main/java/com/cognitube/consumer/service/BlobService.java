@@ -126,8 +126,14 @@ public class BlobService {
             BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
             BlobClient blobClient = containerClient.getBlobClient(blobName);
 
-            String randomFileName = FileNameGenerator.generateUniqueFileName("downloaded-", ".tmp");
-            File tempFile = new File(CUSTOM_TEMP_DIR + randomFileName);
+            String randomFileName = FileNameGenerator.generateUniqueFileName("downloaded", "tmp");
+            File tempFile = null;
+
+            if (CUSTOM_TEMP_DIR == null || CUSTOM_TEMP_DIR.isEmpty()) {
+                tempFile = File.createTempFile(randomFileName, "");
+            } else {
+                tempFile = new File(CUSTOM_TEMP_DIR + randomFileName);
+            }
             try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
                 blobClient.download(outputStream);
             }

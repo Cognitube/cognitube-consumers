@@ -1,7 +1,5 @@
 package com.cognitube.consumer.consumer;
 
-
-import com.cognitube.consumer.consumer.dao.VideoEncodeMessage;
 import com.cognitube.consumer.consumer.dao.VideoUploadMessage;
 import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.BlobService;
@@ -72,11 +70,16 @@ public class VideoProcessConsumer {
         File audioFile = null;
 
         try {
-            if (videoProcessingService.isVideoProcessedOrProcessing(message.getVideoId())) {
+            if (videoProcessingService.isVideoProcessedOrProcessing(message.getVideoId(), message.getRetryCount())) {
                 return;
             }
 
-            videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), message.getUserId(), message.getVideoName());
+            videoProcessingService.recordVideoProcessingStatus(
+                    message.getVideoId(),
+                    message.getUserId(),
+                    message.getVideoName(),
+                    message.getRetryCount()
+            );
 
             log.info("Start processing video: {}", message.getVideoId());
             createVideoTranscodingJob(message.getVideoUrl(), message.getVideoId());

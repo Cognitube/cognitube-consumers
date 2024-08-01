@@ -46,19 +46,30 @@ public class VideoProcessingService {
         }
     }
 
-    public boolean isVideoProcessedOrProcessing(String videoId) {
+    public boolean isVideoProcessedOrProcessing(String videoId, int retryCount) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
-        boolean status;
         try {
-            status = Boolean.TRUE.equals(redisTemplate.hasKey(videoProcessStatusKey));
+            final boolean status = Boolean.TRUE.equals(redisTemplate.hasKey(videoProcessStatusKey));
+            if (!status) {
+                return false;
+            }
+
+            final int count = redisTemplate.opsForHash().get(videoProcessStatusKey, "retryCount") == null
+                    ? 0 : Integer.parseInt((String) Objects.requireNonNull(
+                    redisTemplate.opsForHash().get(videoProcessStatusKey, "retryCount")
+            ));
+            if (count >= retryCount) {
+                return true;
+            }
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        return status;
+        return false;
     }
 
-    public void recordVideoProcessingStatus(String videoId, Long userId, String videoName) {
+    public void recordVideoProcessingStatus(String videoId, Long userId, String videoName, int retryCount) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         try {
             final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
@@ -67,6 +78,7 @@ public class VideoProcessingService {
             hashOps.put(videoProcessStatusKey, "status", "processing");
             hashOps.put(videoProcessStatusKey, "videoName", videoName);
             hashOps.put(videoProcessStatusKey, "userId", userId.toString());
+            hashOps.put(videoProcessStatusKey, "retryCount", retryCount);
             redisTemplate.expire(videoProcessStatusKey, 12, TimeUnit.HOURS);
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -87,7 +87,7 @@ public class ConsumerConfig {
             @Value("${azure.storage.container-name-audio-container}") String audioContainerName,
             @Value("${azure.storage.container-name-temp-video-container}") String tempVideoContainerName,
             @Value("${azure.frontdoor.url}") String azureFrontdoorUrl,
-            @Value("${CUSTOM_TEMP_DIR}") String CUSTOM_TEMP_DIR
+            @Value("${CUSTOM_TEMP_DIR:}") String CUSTOM_TEMP_DIR
     ) {
         return new BlobService(
                 blobServiceClient,
