@@ -46,7 +46,7 @@ public class VideoProcessConsumer {
     private final VideoProcessProducer videoProcessProducer;
     private final String KAFKA_VIDEO_PROCESS_TOPIC;
     private final String KAFKA_AI_TOPIC;
-    private final String AUDIO_JOB_IMAGE
+    private final String AUDIO_JOB_IMAGE;
     private final String transcodingServiceUrl;
     private final VideoProcessingService videoProcessingService;
     private final BatchClient batchClient;
