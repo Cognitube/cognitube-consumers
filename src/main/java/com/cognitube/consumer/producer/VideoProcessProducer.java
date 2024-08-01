@@ -1,6 +1,6 @@
 package com.cognitube.consumer.producer;
 
-import com.cognitube.consumer.consumer.dao.VideoUploadMessage;
+import com.cognitube.consumer.consumer.dao.Message;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -57,7 +57,7 @@ public class VideoProcessProducer {
         });
     }
 
-    public void sendVideoUploadMessageAsync(VideoUploadMessage message, String topicName, Callback callback) {
+    public void sendKafkaMessageAsync(Message message, String topicName, Callback callback) {
         try {
             String jsonMessage = objectMapper.writeValueAsString(message);
             sendMessageAsync(jsonMessage, topicName, callback);

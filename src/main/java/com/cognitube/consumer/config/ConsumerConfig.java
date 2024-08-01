@@ -1,10 +1,16 @@
 package com.cognitube.consumer.config;
 
 import com.azure.storage.blob.BlobServiceClient;
+import com.cognitube.consumer.consumer.VideoAiDataConsumer;
+import com.cognitube.consumer.consumer.VideoEncodeConsumer;
 import com.cognitube.consumer.consumer.VideoProcessConsumer;
+import com.cognitube.consumer.mapper.NotificationMapper;
+import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.BlobService;
+import com.cognitube.consumer.service.NotificationService;
 import com.cognitube.consumer.service.VideoEncodingService;
+import com.cognitube.consumer.service.VideoProcessingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -21,6 +27,45 @@ import org.springframework.kafka.core.KafkaTemplate;
  */
 @Configuration
 public class ConsumerConfig {
+
+    @Bean
+    public NotificationService notificationService(
+            NotificationMapper notificationMapper
+    ) {
+        return new NotificationService(
+                notificationMapper
+        );
+    }
+
+    @Bean
+    public VideoAiDataConsumer videoAiDataConsumer(
+            ObjectMapper objectMapper,
+            VideoMapper videoMapper,
+            @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
+            VideoProcessingService videoProcessingService
+    ) {
+        return new VideoAiDataConsumer(
+                objectMapper,
+                videoMapper,
+                KAFKA_VIDEO_AI_TOPIC,
+                videoProcessingService
+        );
+    }
+
+    @Bean
+    public VideoEncodeConsumer videoEncodeConsumer(
+            ObjectMapper objectMapper,
+            VideoMapper videoMapper,
+            @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC,
+            VideoProcessingService videoProcessingService
+        ) {
+        return new VideoEncodeConsumer(
+                objectMapper,
+                videoMapper,
+                KAFKA_VIDEO_REENCODE_TOPIC,
+                videoProcessingService
+        );
+    }
 
     @Bean
     public ObjectMapper objectMapper() {
@@ -41,7 +86,9 @@ public class ConsumerConfig {
             @Value("${azure.storage.container-name-profile-image-container}") String profileImageContainerName,
             @Value("${azure.storage.container-name-audio-container}") String audioContainerName,
             @Value("${azure.storage.container-name-temp-video-container}") String tempVideoContainerName,
-            @Value("${azure.frontdoor.url}") String azureFrontdoorUrl) {
+            @Value("${azure.frontdoor.url}") String azureFrontdoorUrl,
+            @Value("${CUSTOM_TEMP_DIR:}") String CUSTOM_TEMP_DIR
+    ) {
         return new BlobService(
                 blobServiceClient,
                 videoContainerName,
@@ -50,7 +97,8 @@ public class ConsumerConfig {
                 profileImageContainerName,
                 audioContainerName,
                 tempVideoContainerName,
-                azureFrontdoorUrl
+                azureFrontdoorUrl,
+                CUSTOM_TEMP_DIR
         );
     }
 
@@ -59,21 +107,23 @@ public class ConsumerConfig {
             ObjectMapper objectMapper,
             BlobService blobService,
             VideoProcessProducer videoProcessProducer,
-            RedisTemplate<String, String> redisTemplate,
             VideoEncodingService videoEncodingService,
             @Value("${kafka.video.process.topic}") String KAFKA_VIDEO_PROCESS_TOPIC,
+            @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
             @Value("${application.keyword.service.url}") String keywordServiceUrl,
-            @Value("${azure.storage.blob.endpoint}") String blobEndpoint
+            @Value("${application.transcoding.service.url}") String transcodingServiceUrl,
+            VideoProcessingService videoProcessingService
     ) {
         return new VideoProcessConsumer(
                 objectMapper,
                 blobService,
                 videoProcessProducer,
-                redisTemplate,
                 videoEncodingService,
                 KAFKA_VIDEO_PROCESS_TOPIC,
+                KAFKA_VIDEO_AI_TOPIC,
                 keywordServiceUrl,
-                blobEndpoint
+                transcodingServiceUrl,
+                videoProcessingService
         );
     }
 
@@ -86,8 +136,23 @@ public class ConsumerConfig {
         return new KafkaConsumerConfig(
                 namespace,
                 username,
-                password);
+                password
+        );
     }
+
+    @Bean
+    public KafkaProducerConfig kafkaProducerConfig(
+            @Value("${kafka.eventhub.namespace}") String namespace,
+            @Value("${kafka.username}") String username,
+            @Value("${kafka.password}") String password
+    ) {
+        return new KafkaProducerConfig(
+                namespace,
+                username,
+                password
+        );
+    }
+
 
     @Bean
     public VideoEncodingService videoEncodingService(
@@ -108,6 +173,23 @@ public class ConsumerConfig {
         return new VideoProcessProducer(
                 kafkaTemplate,
                 objectMapper
+        );
+    }
+
+    @Bean
+    public VideoProcessingService videoProcessingService(
+            VideoMapper videoMapper,
+            RedisTemplate<String, String> redisTemplate,
+            @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
+            @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC,
+            NotificationService notificationService
+    ) {
+        return new VideoProcessingService(
+                videoMapper,
+                redisTemplate,
+                KAFKA_VIDEO_AI_TOPIC,
+                KAFKA_VIDEO_REENCODE_TOPIC,
+                notificationService
         );
     }
 }
