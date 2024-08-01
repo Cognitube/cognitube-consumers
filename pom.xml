@@ -106,6 +106,13 @@
 			<version>12.19.1</version>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/com.microsoft.azure/azure-batch -->
+		<dependency>
+			<groupId>com.microsoft.azure</groupId>
+			<artifactId>azure-batch</artifactId>
+			<version>11.1.1</version>
+		</dependency>
+
 		<!-- Kafka -->
 		<dependency>
 			<groupId>org.apache.kafka</groupId>

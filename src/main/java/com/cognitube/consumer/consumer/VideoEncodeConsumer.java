@@ -14,9 +14,6 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.util.UUID;
-
 @Slf4j
 @Component
 @AllArgsConstructor
@@ -51,14 +48,17 @@ public class VideoEncodeConsumer {
 
             final String videoId = message.getVideoId();
             final String processedVideoUrl = message.getVideoUrl();
+            final double videoDuration = message.getVideoDuration();
             log.info("Reencoded video {} stored at {}", videoId, processedVideoUrl);
 
             final Video video = Video.builder()
                     .setId(videoId)
                     .setFileLink(processedVideoUrl)
+                    .setLength(videoDuration)
                     .build();
             videoMapper.updateVideo(video);
 
+            videoProcessingService.recordVideoDuration(videoId, videoDuration);
             videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), KAFKA_VIDEO_REENCODE_TOPIC);
             videoProcessingService.updateVideoStatusIfDone(message.getVideoId());
         } catch (Exception e) {

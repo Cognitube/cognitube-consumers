@@ -49,4 +49,9 @@ ENV KAFKA_VIDEO_REENCODE_TOPIC=video-reencode
 ENV KAFKA_VIDEO_PROCESS_GROUP_ID=video-process-group
 ENV KAFKA_EVENTHUB_USERNAME=\$ConnectionString
 
+ENV AZURE_BATCH_ACCOUNT_NAME=audio
+ENV AZURE_BATCH_ACCOUNT_KEY="VTx4AVW1yR+rh5TCN8qJsoToOV/oiXpcDmiXTAs1GCO4kb48xuyph1YNQzxzZADIDCq3GGRsewnL+ABaDUlg4Q=="
+ENV AZURE_BATCH_ACCOUNT_URL=https://audio.eastus.batch.azure.com
+ENV AUDIO_JOB_IMAGE="haozhealexzhang/cognitube-audio-conversion-job:latest"
+
 ENTRYPOINT [ "java", "-jar", "/usr/local/lib/app.jar" ]

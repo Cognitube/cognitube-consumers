@@ -12,6 +12,7 @@ import com.cognitube.consumer.service.NotificationService;
 import com.cognitube.consumer.service.VideoEncodingService;
 import com.cognitube.consumer.service.VideoProcessingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microsoft.azure.batch.BatchClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -103,27 +104,40 @@ public class ConsumerConfig {
     }
 
     @Bean
+    public AzureBatchConfig azureBatchConfig(
+            @Value("${azure.batch.account-url}") String batchAccountUrl,
+            @Value("${azure.batch.account-name}") String batchAccountName,
+            @Value("${azure.batch.account-key}") String batchAccountKey
+    ) {
+        return new AzureBatchConfig(
+                batchAccountUrl,
+                batchAccountName,
+                batchAccountKey
+        );
+    }
+
+    @Bean
     public VideoProcessConsumer videoProcessConsumer(
             ObjectMapper objectMapper,
             BlobService blobService,
             VideoProcessProducer videoProcessProducer,
-            VideoEncodingService videoEncodingService,
             @Value("${kafka.video.process.topic}") String KAFKA_VIDEO_PROCESS_TOPIC,
             @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
-            @Value("${application.keyword.service.url}") String keywordServiceUrl,
             @Value("${application.transcoding.service.url}") String transcodingServiceUrl,
-            VideoProcessingService videoProcessingService
+            @Value("${application.audio.conversion.job.image}") String AUDIO_JOB_IMAGE,
+            VideoProcessingService videoProcessingService,
+            BatchClient batchClient
     ) {
         return new VideoProcessConsumer(
                 objectMapper,
                 blobService,
                 videoProcessProducer,
-                videoEncodingService,
                 KAFKA_VIDEO_PROCESS_TOPIC,
                 KAFKA_VIDEO_AI_TOPIC,
-                keywordServiceUrl,
+                AUDIO_JOB_IMAGE,
                 transcodingServiceUrl,
-                videoProcessingService
+                videoProcessingService,
+                batchClient
         );
     }
 

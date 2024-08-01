@@ -7,6 +7,11 @@ import com.cognitube.consumer.service.VideoEncodingService;
 import com.cognitube.consumer.service.VideoProcessingService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microsoft.azure.batch.BatchClient;
+import com.microsoft.azure.batch.protocol.models.JobAddParameter;
+import com.microsoft.azure.batch.protocol.models.PoolInformation;
+import com.microsoft.azure.batch.protocol.models.TaskAddParameter;
+import com.microsoft.azure.batch.protocol.models.TaskContainerSettings;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpResponse;
@@ -39,12 +44,12 @@ public class VideoProcessConsumer {
     private final ObjectMapper objectMapper;
     private final BlobService blobService;
     private final VideoProcessProducer videoProcessProducer;
-    private final VideoEncodingService videoEncodingService;
     private final String KAFKA_VIDEO_PROCESS_TOPIC;
-    private final String KAFKA_VIDEO_AI_TOPIC;
-    private final String keywordServiceUrl;
+    private final String KAFKA_AI_TOPIC;
+    private final String AUDIO_JOB_IMAGE
     private final String transcodingServiceUrl;
     private final VideoProcessingService videoProcessingService;
+    private final BatchClient batchClient;
 
     @KafkaListener(topics = "${kafka.video.process.topic}", groupId = "${kafka.video.process.group.id}")
     public void consumeProcessVideoMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
@@ -66,9 +71,6 @@ public class VideoProcessConsumer {
         MDC.put("userId", message.getUserId().toString());
         MDC.put("processingTime", System.currentTimeMillis() + "");
 
-        File videoFile = null;
-        File audioFile = null;
-
         try {
             if (videoProcessingService.isVideoProcessedOrProcessing(message.getVideoId(), message.getRetryCount())) {
                 return;
@@ -83,25 +85,7 @@ public class VideoProcessConsumer {
 
             log.info("Start processing video: {}", message.getVideoId());
             createVideoTranscodingJob(message.getVideoUrl(), message.getVideoId());
-
-            videoFile = getOriginalVideo(message.getVideoUrl());
-
-            final double videoDuration = videoProcessingService.getVideoDuration(videoFile);
-            videoProcessingService.recordVideoDuration(message.getVideoId(), videoDuration);
-
-            log.info("Start converting video to audio: {}", message.getVideoId());
-            audioFile = videoEncodingService.convertVideoToAudio(videoFile);
-            if (audioFile == null) {
-                log.warn("Video does not have an audio track.");
-                videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), KAFKA_VIDEO_AI_TOPIC);
-            } else {
-                final String audioUrl = blobService.uploadAudio(audioFile);
-                log.info("Audio extracted. Stored at: {}", audioUrl);
-
-                createKeywordExtractionJob(audioUrl, message.getVideoId());
-                log.info("Keyword extraction job created. Waiting for keywords to be extracted.");
-            }
-
+            createAudioConversionJob(message.getVideoUrl(), message.getVideoId());
 
         } catch (Exception e) {
             //TODO: specify more exception types
@@ -121,9 +105,6 @@ public class VideoProcessConsumer {
                     }
                 });
             }
-        } finally {
-            videoProcessingService.removeFile(videoFile);
-            videoProcessingService.removeFile(audioFile);
         }
     }
 
@@ -148,20 +129,24 @@ public class VideoProcessConsumer {
         }
     }
 
-    private void createKeywordExtractionJob(String audioFileurl, String videoId) {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            final HttpPost uploadFile = new HttpPost(keywordServiceUrl + "/v1/transcription/create");
+    private void createAudioConversionJob(String videoUrl, String videoId) {
+        try {
+            JobAddParameter jobToAdd = new JobAddParameter();
+            jobToAdd.withId("conversion")
+                    .withPoolInfo(new PoolInformation().withPoolId("audio"));
+            batchClient.jobOperations().createJob(jobToAdd);
 
-            final JSONObject json = new JSONObject();
-            json.put("videoId", videoId);
-            json.put("audioUrl", audioFileurl);
+            String taskCommandLine = String.format("go run main.go %s %s %s", videoId, videoUrl, KAFKA_AI_TOPIC);
+            TaskAddParameter task = new TaskAddParameter()
+                    .withId(videoId)
+                    .withCommandLine(taskCommandLine)
+                    .withContainerSettings(new TaskContainerSettings()
+                            .withContainerRunOptions("--rm")
+                            .withImageName(AUDIO_JOB_IMAGE));
 
-            final StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
-            uploadFile.setEntity(entity);
-
-            httpClient.execute(uploadFile);
+            batchClient.taskOperations().createTask("conversion", task);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to extract keywords", e);
+            throw new RuntimeException("Failed to submit audio conversion job for keyword processing", e);
         }
     }
 
