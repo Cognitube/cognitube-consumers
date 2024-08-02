@@ -1,6 +1,7 @@
 package com.cognitube.consumer.config;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -12,6 +13,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  * @description Redis configuration
  * @date 2024/7/17 13:30:46
  */
+@Configuration
 public class RedisConfig {
 
     @Bean
