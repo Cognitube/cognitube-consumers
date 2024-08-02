@@ -86,9 +86,6 @@ public class VideoProcessConsumer {
 
             videoFile = getOriginalVideo(message.getVideoUrl());
 
-            final double videoDuration = videoProcessingService.getVideoDuration(videoFile);
-            videoProcessingService.recordVideoDuration(message.getVideoId(), videoDuration);
-
             log.info("Start converting video to audio: {}", message.getVideoId());
             audioFile = videoEncodingService.convertVideoToAudio(videoFile);
             if (audioFile == null) {

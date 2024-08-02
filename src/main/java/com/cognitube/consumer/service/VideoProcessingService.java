@@ -37,15 +37,6 @@ public class VideoProcessingService {
     private final String KAFKA_VIDEO_REENCODE_TOPIC;
     private final NotificationService notificationService;
 
-    public double getVideoDuration(File videoFile) {
-        try (FileChannelWrapper ch = NIOUtils.readableChannel(videoFile)) {
-            FrameGrab grab = FrameGrab.createFrameGrab(ch);
-            return grab.getVideoTrack().getMeta().getTotalDuration();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get video duration", e);
-        }
-    }
-
     public boolean isVideoProcessedOrProcessing(String videoId, int retryCount) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         try {

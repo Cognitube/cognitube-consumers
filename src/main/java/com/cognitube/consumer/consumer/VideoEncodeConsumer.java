@@ -51,6 +51,7 @@ public class VideoEncodeConsumer {
 
             final String videoId = message.getVideoId();
             final String processedVideoUrl = message.getVideoUrl();
+            final double videoDuration = message.getVideoDuration();
             log.info("Reencoded video {} stored at {}", videoId, processedVideoUrl);
 
             final Video video = Video.builder()
@@ -59,6 +60,7 @@ public class VideoEncodeConsumer {
                     .build();
             videoMapper.updateVideo(video);
 
+            videoProcessingService.recordVideoDuration(message.getVideoId(), videoDuration);
             videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), KAFKA_VIDEO_REENCODE_TOPIC);
             videoProcessingService.updateVideoStatusIfDone(message.getVideoId());
         } catch (Exception e) {

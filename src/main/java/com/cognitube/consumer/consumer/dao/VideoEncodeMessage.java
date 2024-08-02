@@ -20,5 +20,6 @@ public class VideoEncodeMessage implements Message {
     private String videoId;
     private String videoUrl;
     private boolean success;
+    private double videoDuration;
     private String error;
 }
