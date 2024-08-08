@@ -141,7 +141,7 @@ public class VideoProcessConsumer {
                 throw new RuntimeException("Failed to send transcoding request");
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send transcription request", e);
+            throw new RuntimeException("Failed to send transcoding request", e);
         }
     }
 
