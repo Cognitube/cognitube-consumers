@@ -70,6 +70,7 @@ public class VideoProcessingService {
             hashOps.put(videoProcessStatusKey, "videoName", videoName);
             hashOps.put(videoProcessStatusKey, "userId", userId.toString());
             hashOps.put(videoProcessStatusKey, "retryCount", String.valueOf(retryCount));
+            hashOps.put(videoProcessStatusKey, "videoDuration", "0.0");
             redisTemplate.expire(videoProcessStatusKey, 12, TimeUnit.HOURS);
         } catch (Exception e) {
             throw new RuntimeException(e);
