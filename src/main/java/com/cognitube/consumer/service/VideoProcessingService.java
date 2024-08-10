@@ -12,11 +12,14 @@ import org.jcodec.common.io.FileChannelWrapper;
 import org.jcodec.common.io.NIOUtils;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -128,7 +131,17 @@ public class VideoProcessingService {
 
     public void updateVideoStatusIfDone(String videoId) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        final String lockKey = RedisKeys.getVideoProcessingLockKey(videoId); // 定义一个锁键
+        final String lockValue = UUID.randomUUID().toString(); // 锁的唯一值
+        final int lockExpiration = 30; // 锁的过期时间，单位为秒
+
         try {
+            Boolean acquiredLock = redisTemplate.opsForValue().setIfAbsent(lockKey, lockValue, lockExpiration, TimeUnit.SECONDS);
+            if (Boolean.FALSE.equals(acquiredLock)) {
+                log.info("Failed to acquire lock for video processing status update for video {}", videoId);
+                return;
+            }
+
             final boolean keyExists = Boolean.TRUE.equals(redisTemplate.hasKey(videoProcessStatusKey));
             if (!keyExists) {
                 // this happens when the temp table has expired in the middle of the process
@@ -171,7 +184,17 @@ public class VideoProcessingService {
             log.info("Video has been processed.");
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+            releaseLock(lockKey, lockValue);
         }
+    }
+
+    private void releaseLock(String lockKey, String lockValue) {
+        // 使用 Lua 脚本原子性地释放锁
+        String script = "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+                "return redis.call('del', KEYS[1]) " +
+                "else return 0 end";
+        redisTemplate.execute(new DefaultRedisScript<>(script, Long.class), Collections.singletonList(lockKey), lockValue);
     }
 
     // TODO: add more handling for database record and temp files on blob
