@@ -169,4 +169,10 @@ public class BlobService {
         }
     }
 
+    public void safeDeleteFile(String nullableBlobUrl) {
+        if (nullableBlobUrl != null && !nullableBlobUrl.isEmpty()) {
+            deleteFile(nullableBlobUrl);
+        }
+    }
+
 }

@@ -78,7 +78,8 @@ public class VideoProcessConsumer {
                     message.getVideoId(),
                     message.getUserId(),
                     message.getVideoName(),
-                    message.getRetryCount()
+                    message.getRetryCount(),
+                    message.getVideoUrl()
             );
 
             log.info("Start processing video: {}", message.getVideoId());

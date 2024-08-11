@@ -36,6 +36,7 @@ public class VideoProcessingService {
     private final String KAFKA_VIDEO_AI_TOPIC;
     private final String KAFKA_VIDEO_REENCODE_TOPIC;
     private final NotificationService notificationService;
+    private final BlobService blobService;
 
     public boolean isVideoProcessedOrProcessing(String videoId, int retryCount) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
@@ -60,7 +61,7 @@ public class VideoProcessingService {
         return false;
     }
 
-    public void recordVideoProcessingStatus(String videoId, Long userId, String videoName, int retryCount) {
+    public void recordVideoProcessingStatus(String videoId, Long userId, String videoName, int retryCount, String videoUrl) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         try {
             final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
@@ -70,6 +71,7 @@ public class VideoProcessingService {
             hashOps.put(videoProcessStatusKey, "videoName", videoName);
             hashOps.put(videoProcessStatusKey, "userId", userId.toString());
             hashOps.put(videoProcessStatusKey, "retryCount", String.valueOf(retryCount));
+            hashOps.put(videoProcessStatusKey, "videoUrl", videoUrl);
             redisTemplate.expire(videoProcessStatusKey, 12, TimeUnit.HOURS);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -143,7 +145,7 @@ public class VideoProcessingService {
             final double videoDuration = Double.parseDouble((String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "videoDuration")));
 
             if ("failed".equals(overallStatus)) {
-                handleFailedProcessing(userId, videoName);
+                handleFailedProcessing(videoId);
                 return;
             }
 
@@ -173,10 +175,36 @@ public class VideoProcessingService {
         }
     }
 
-    // TODO: add more handling for database record and temp files on blob
-    private void handleFailedProcessing(Long userId, String videoName) {
+    public void handleFailedProcessing(String videoId) {
+        String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        if (Boolean.FALSE.equals(redisTemplate.hasKey(videoProcessStatusKey))) {
+            throw new RuntimeException("Video process status key does not exist");
+        }
+        HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
+        String userUploadVideoUrl = (String) hashOps.get(videoProcessStatusKey, "videoUrl");
+
+        Video video = videoMapper.selectVideoById(videoId);
+        Long userId = video.getAuthorId();
+        String videoName = video.getTitle();
+        String encodedVideoUrl = video.getFileLink();
+        String coverImageUrl = video.getCoverImageLink();
+        String keywordsUrl = video.getKeywordsLink();
+        String transcriptUrl = video.getTranscriptLink();
+
+        // Send notification to user
         final String notificationMessage = String.format("Your video %s has failed to process. Please try again later!", videoName);
         notificationService.addSystemNotification(userId, notificationMessage);
+
+        // Delete Blob files if exist
+        blobService.safeDeleteFile(userUploadVideoUrl);
+        blobService.safeDeleteFile(encodedVideoUrl);
+        blobService.safeDeleteFile(coverImageUrl);
+        blobService.safeDeleteFile(keywordsUrl);
+        blobService.safeDeleteFile(transcriptUrl);
+
+        // Delete database and redis record
+        videoMapper.deleteVideoById(videoId);
+        redisTemplate.delete(videoProcessStatusKey);
     }
 
     public void removeFile(File file) {

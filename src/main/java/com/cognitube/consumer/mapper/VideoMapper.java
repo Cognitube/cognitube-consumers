@@ -14,4 +14,16 @@ public interface VideoMapper {
      */
     void updateVideo(Video video);
 
+    /**
+     * Select video by id
+     * @param videoId video id
+     * @return video
+     */
+    Video selectVideoById(String videoId);
+
+    /**
+     * Delete video by id
+     * @param videoId video id
+     */
+    void deleteVideoById(String videoId);
 }

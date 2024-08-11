@@ -182,14 +182,16 @@ public class ConsumerConfig {
             RedisTemplate<String, String> redisTemplate,
             @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
             @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC,
-            NotificationService notificationService
+            NotificationService notificationService,
+            BlobService blobService
     ) {
         return new VideoProcessingService(
                 videoMapper,
                 redisTemplate,
                 KAFKA_VIDEO_AI_TOPIC,
                 KAFKA_VIDEO_REENCODE_TOPIC,
-                notificationService
+                notificationService,
+                blobService
         );
     }
 }

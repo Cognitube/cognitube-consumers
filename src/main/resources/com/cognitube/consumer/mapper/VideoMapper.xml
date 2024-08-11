@@ -28,4 +28,14 @@
     WHERE id = #{id}
     </update>
 
+  <select id="selectVideoById" resultType="com.cognitube.consumer.model.Video">
+    SELECT <include refid="videoFields"/>
+    FROM videos
+    WHERE id = #{id}
+  </select>
+
+  <delete id="deleteVideoById">
+    DELETE FROM videos
+    WHERE id = #{id}
+  </delete>
 </mapper>
