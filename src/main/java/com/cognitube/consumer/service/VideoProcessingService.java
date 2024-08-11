@@ -7,9 +7,16 @@ import com.cognitube.consumer.util.DateUtil;
 import com.cognitube.consumer.util.RedisKeys;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.jcodec.api.FrameGrab;
 import org.jcodec.common.io.FileChannelWrapper;
 import org.jcodec.common.io.NIOUtils;
+import org.json.JSONObject;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -39,6 +46,7 @@ public class VideoProcessingService {
     private final String KAFKA_VIDEO_AI_TOPIC;
     private final String KAFKA_VIDEO_REENCODE_TOPIC;
     private final NotificationService notificationService;
+    private final String transcodingServiceUrl;
 
     public boolean isVideoProcessedOrProcessing(String videoId, int retryCount) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
@@ -239,9 +247,26 @@ public class VideoProcessingService {
         notificationService.addSystemNotification(userId, notificationMessage);
     }
 
-    public void removeFile(File file) {
-        if (file != null && file.exists()) {
-            file.delete();
+
+    public void createAudioExtractionJob(String videoUrl, String videoId, int retryCount) {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            final HttpPost request = new HttpPost(transcodingServiceUrl + "/v1/extract-audio");
+
+            final JSONObject json = new JSONObject();
+            json.put("videoId", videoId);
+            json.put("videoUrl", videoUrl);
+            json.put("retryCount", retryCount);
+
+            final StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
+            request.setEntity(entity);
+
+            HttpResponse response = httpClient.execute(request);
+            if (response.getStatusLine().getStatusCode() != 200) {
+                log.error("Failed to send audio extraction request {}", response.getEntity().getContent().toString());
+                throw new RuntimeException("Failed to send audio extraction request");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send audio extraction request", e);
         }
     }
 }

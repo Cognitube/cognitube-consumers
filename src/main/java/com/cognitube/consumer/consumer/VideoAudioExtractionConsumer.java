@@ -1,7 +1,6 @@
 package com.cognitube.consumer.consumer;
 
 import com.cognitube.consumer.consumer.dao.VideoAudioExtractionMessage;
-import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.VideoProcessingService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,8 +32,6 @@ public class VideoAudioExtractionConsumer {
     private final ObjectMapper objectMapper;
     private final VideoProcessingService videoProcessingService;
     private final String keywordServiceUrl;
-    private final VideoProcessProducer videoProcessProducer;
-    private final String KAFKA_VIDEO_AUDIO_EXTRACTION_TOPIC;
 
     @KafkaListener(topics = "${kafka.video.audio.extraction.topic}", groupId = "${kafka.video.process.group.id}")
     public void consumeAudioExtractionMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
@@ -83,16 +80,11 @@ public class VideoAudioExtractionConsumer {
                 log.error("Failed to process video after 3 retries. Terminating processing for video.");
                 videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
             } else {
-                message.setRetryCount(message.getRetryCount() + 1);
-                final VideoAudioExtractionMessage finalMessage = message;
-                videoProcessProducer.sendKafkaMessageAsync(message, KAFKA_VIDEO_AUDIO_EXTRACTION_TOPIC, (metadata, exception) -> {
-                    if (exception != null) {
-                        videoProcessingService.markVideoProcessingStatusAsFailed(finalMessage.getVideoId());
-                        throw new RuntimeException("Failed to send audio extraction message", exception);
-                    } else {
-                        log.info("Audio extraction message sent successfully. Retry count: {}", finalMessage.getRetryCount());
-                    }
-                });
+                try {
+                    videoProcessingService.createAudioExtractionJob(message.getAudioUrl(), message.getVideoId(), message.getRetryCount() + 1);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
             }
         }
     }

@@ -71,16 +71,12 @@ public class ConsumerConfig {
     public VideoAudioExtractionConsumer videoAudioExtractionConsumer(
             ObjectMapper objectMapper,
             VideoProcessingService videoProcessingService,
-            @Value("${application.keyword.service.url}") String keywordServiceUrl,
-            VideoProcessProducer videoProcessProducer,
-            @Value("${kafka.video.audio.extraction.topic}") String KAFKA_VIDEO_AUDIO_EXTRACTION_TOPIC
+            @Value("${application.keyword.service.url}") String keywordServiceUrl
     ) {
         return new VideoAudioExtractionConsumer(
                 objectMapper,
                 videoProcessingService,
-                keywordServiceUrl,
-                videoProcessProducer,
-                KAFKA_VIDEO_AUDIO_EXTRACTION_TOPIC
+                keywordServiceUrl
         );
     }
 
@@ -179,14 +175,16 @@ public class ConsumerConfig {
             RedisTemplate<String, String> redisTemplate,
             @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
             @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC,
-            NotificationService notificationService
+            NotificationService notificationService,
+            @Value("${application.transcoding.service.url}") String transcodingServiceUrl
     ) {
         return new VideoProcessingService(
                 videoMapper,
                 redisTemplate,
                 KAFKA_VIDEO_AI_TOPIC,
                 KAFKA_VIDEO_REENCODE_TOPIC,
-                notificationService
+                notificationService,
+                transcodingServiceUrl
         );
     }
 }
