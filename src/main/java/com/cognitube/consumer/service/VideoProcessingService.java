@@ -72,7 +72,7 @@ public class VideoProcessingService {
             }
 
             final int count = redisTemplate.opsForHash().get(videoProcessStatusKey, "audioExtractionRetryCount") == null
-                    ? 0 : Integer.parseInt((String) Objects.requireNonNull(
+                    ? -1 : Integer.parseInt((String) Objects.requireNonNull(
                     redisTemplate.opsForHash().get(videoProcessStatusKey, "audioExtractionRetryCount")
             ));
             if (count >= retryCount) {
