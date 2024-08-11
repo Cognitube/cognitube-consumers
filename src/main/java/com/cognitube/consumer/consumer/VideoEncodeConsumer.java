@@ -27,12 +27,11 @@ public class VideoEncodeConsumer {
     private final VideoProcessingService videoProcessingService;
 
     @KafkaListener(topics = "${kafka.video.reencode.topic}", groupId = "${kafka.video.process.group.id}")
-    public void consumeReencodeMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
-        process(record, acknowledgment);
+    public void consumeReencodeMessage(ConsumerRecord<String, String> record) {
+        process(record);
     }
 
-    private void process(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
-        acknowledgment.acknowledge();
+    private void process(ConsumerRecord<String, String> record) {
         VideoEncodeMessage message;
         try {
             message = objectMapper.readValue(record.value(), VideoEncodeMessage.class);

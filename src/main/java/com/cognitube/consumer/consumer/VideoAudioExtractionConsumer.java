@@ -35,12 +35,11 @@ public class VideoAudioExtractionConsumer {
     private final String KAFKA_VIDEO_AI_TOPIC;
 
     @KafkaListener(topics = "${kafka.video.audio.extraction.topic}", groupId = "${kafka.video.process.group.id}")
-    public void consumeAudioExtractionMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
-        process(record, acknowledgment);
+    public void consumeAudioExtractionMessage(ConsumerRecord<String, String> record) {
+        process(record);
     }
 
-    private void process(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
-        acknowledgment.acknowledge();
+    private void process(ConsumerRecord<String, String> record) {
         log.info("Received audio extraction message: {}", record.value());
 
         VideoAudioExtractionMessage message;
