@@ -69,7 +69,16 @@ public class VideoEncodeConsumer {
         } catch (Exception e) {
             //TODO: specify more exception types
             log.error("Failed to reencode video", e);
-            videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
+            if (message.getRetryCount() > 3) {
+                log.error("Failed to transcode video after 3 retries. Terminating transcoding for video.");
+                videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
+            } else {
+                try {
+                    videoProcessingService.createVideoTranscodingJob(message.getVideoUrl(), message.getVideoId(), message.getRetryCount() + 1);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
         }
     }
 }

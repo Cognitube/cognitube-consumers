@@ -22,4 +22,5 @@ public class VideoEncodeMessage implements Message {
     private boolean success;
     private double videoDuration;
     private String error;
+    private int retryCount;
 }

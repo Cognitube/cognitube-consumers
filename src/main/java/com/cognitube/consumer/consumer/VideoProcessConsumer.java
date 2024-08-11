@@ -66,7 +66,7 @@ public class VideoProcessConsumer {
             }
 
             log.info("Start processing video: {}", message.getVideoId());
-            createVideoTranscodingJob(message.getVideoUrl(), message.getVideoId());
+            videoProcessingService.createVideoTranscodingJob(message.getVideoUrl(), message.getVideoId(), 0);
             videoProcessingService.createAudioExtractionJob(message.getVideoUrl(), message.getVideoId(), 0);
 
             videoProcessingService.recordVideoProcessingStatus(
@@ -93,27 +93,6 @@ public class VideoProcessConsumer {
                     }
                 });
             }
-        }
-    }
-
-    private void createVideoTranscodingJob(String videoUrl, String videoId) {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            final HttpPost request = new HttpPost(transcodingServiceUrl + "/v1/transcode");
-
-            final JSONObject json = new JSONObject();
-            json.put("videoId", videoId);
-            json.put("videoUrl", videoUrl);
-
-            final StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
-            request.setEntity(entity);
-
-            HttpResponse response = httpClient.execute(request);
-            if (response.getStatusLine().getStatusCode() != 200) {
-                log.error("Failed to send transcoding request {}", response.getEntity().getContent().toString());
-                throw new RuntimeException("Failed to send transcoding request");
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to send transcoding request", e);
         }
     }
 }

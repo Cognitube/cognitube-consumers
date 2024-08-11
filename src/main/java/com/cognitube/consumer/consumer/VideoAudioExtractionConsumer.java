@@ -32,6 +32,7 @@ public class VideoAudioExtractionConsumer {
     private final ObjectMapper objectMapper;
     private final VideoProcessingService videoProcessingService;
     private final String keywordServiceUrl;
+    private final String KAFKA_VIDEO_AI_TOPIC;
 
     @KafkaListener(topics = "${kafka.video.audio.extraction.topic}", groupId = "${kafka.video.process.group.id}")
     public void consumeAudioExtractionMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
@@ -52,7 +53,8 @@ public class VideoAudioExtractionConsumer {
         }
 
         try {
-            if (videoProcessingService.isAudioExtractedOrExtracting(message.getVideoId(), message.getRetryCount())) {
+            if (videoProcessingService.isVideoProcessingStepDoneOrFailed(message.getVideoId(), KAFKA_VIDEO_AI_TOPIC) ||
+                    videoProcessingService.isAudioExtractedOrExtracting(message.getVideoId(), message.getRetryCount())) {
                 return;
             }
 
@@ -64,7 +66,7 @@ public class VideoAudioExtractionConsumer {
                 }
 
                 log.info("Video does not contain an audio track");
-                videoProcessingService.recordAudioExtractionStatus(message.getVideoId(), message.getRetryCount());
+                videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), KAFKA_VIDEO_AI_TOPIC);
                 return;
             }
 
@@ -88,7 +90,6 @@ public class VideoAudioExtractionConsumer {
             }
         }
     }
-
 
     private void createKeywordExtractionJob(String audioFileurl, String videoId) {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {

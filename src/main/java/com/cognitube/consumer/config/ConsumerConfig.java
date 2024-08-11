@@ -71,12 +71,14 @@ public class ConsumerConfig {
     public VideoAudioExtractionConsumer videoAudioExtractionConsumer(
             ObjectMapper objectMapper,
             VideoProcessingService videoProcessingService,
-            @Value("${application.keyword.service.url}") String keywordServiceUrl
+            @Value("${application.keyword.service.url}") String keywordServiceUrl,
+            @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC
     ) {
         return new VideoAudioExtractionConsumer(
                 objectMapper,
                 videoProcessingService,
-                keywordServiceUrl
+                keywordServiceUrl,
+                KAFKA_VIDEO_AI_TOPIC
         );
     }
 

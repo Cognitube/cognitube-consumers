@@ -247,7 +247,6 @@ public class VideoProcessingService {
         notificationService.addSystemNotification(userId, notificationMessage);
     }
 
-
     public void createAudioExtractionJob(String videoUrl, String videoId, int retryCount) {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             final HttpPost request = new HttpPost(transcodingServiceUrl + "/v1/extract-audio");
@@ -267,6 +266,28 @@ public class VideoProcessingService {
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to send audio extraction request", e);
+        }
+    }
+
+    public void createVideoTranscodingJob(String videoUrl, String videoId, int retryCount) {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            final HttpPost request = new HttpPost(transcodingServiceUrl + "/v1/transcode");
+
+            final JSONObject json = new JSONObject();
+            json.put("videoId", videoId);
+            json.put("videoUrl", videoUrl);
+            json.put("retryCount", retryCount);
+
+            final StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
+            request.setEntity(entity);
+
+            HttpResponse response = httpClient.execute(request);
+            if (response.getStatusLine().getStatusCode() != 200) {
+                log.error("Failed to send transcoding request {}", response.getEntity().getContent().toString());
+                throw new RuntimeException("Failed to send transcoding request");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send transcoding request", e);
         }
     }
 }
