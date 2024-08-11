@@ -14,7 +14,7 @@ RUN mkdir -p /home/app/tempfiles
 
 COPY --from=build /home/app/target/*.jar /usr/local/lib/app.jar
 
-ENV CUSTOM_TEMP_DIR /home/app/tempfiles
+ENV CUSTOM_TEMP_DIR /home/app/tempfiles/
 
 ENV SPRING_PROFILES_ACTIVE=dev
 ENV AZURE_STORAGE_CONTAINER_NAME_TEMP_VIDEO=private-container

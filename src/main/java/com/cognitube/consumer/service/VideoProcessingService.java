@@ -165,6 +165,10 @@ public class VideoProcessingService {
                 return;
             }
 
+            if ("done".equals(overallStatus)) {
+                return;
+            }
+
             hashOps.put(videoProcessStatusKey, "status", "done");
 
             final Video video = Video.builder()
