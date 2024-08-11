@@ -63,6 +63,38 @@ public class VideoProcessingService {
         return false;
     }
 
+    public boolean isAudioExtractedOrExtracting(String videoId, int retryCount) {
+        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        try {
+            final boolean status = Boolean.TRUE.equals(redisTemplate.hasKey(videoProcessStatusKey));
+            if (!status) {
+                throw new RuntimeException("Video process status key does not exist");
+            }
+
+            final int count = redisTemplate.opsForHash().get(videoProcessStatusKey, "audioExtractionRetryCount") == null
+                    ? 0 : Integer.parseInt((String) Objects.requireNonNull(
+                    redisTemplate.opsForHash().get(videoProcessStatusKey, "audioExtractionRetryCount")
+            ));
+            if (count >= retryCount) {
+                return true;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return false;
+    }
+
+    public void recordAudioExtractionStatus(String videoId, int retryCount) {
+        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        try {
+            final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
+            hashOps.put(videoProcessStatusKey, "audioExtractionRetryCount", String.valueOf(retryCount));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void recordVideoProcessingStatus(String videoId, Long userId, String videoName, int retryCount) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         try {

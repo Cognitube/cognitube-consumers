@@ -3,7 +3,6 @@ package com.cognitube.consumer.consumer;
 import com.cognitube.consumer.consumer.dao.VideoEncodeMessage;
 import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.model.Video;
-import com.cognitube.consumer.service.VideoEncodingService;
 import com.cognitube.consumer.service.VideoProcessingService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,6 +42,10 @@ public class VideoEncodeConsumer {
         }
 
         try {
+            if (videoProcessingService.isVideoProcessingStepDoneOrFailed(message.getVideoId(), KAFKA_VIDEO_REENCODE_TOPIC)) {
+                return;
+            }
+
             final boolean isTranscodingSuccessful = message.isSuccess();
             if (!isTranscodingSuccessful) {
                 final String error = message.getError();
