@@ -14,7 +14,7 @@ RUN mkdir -p /home/app/tempfiles
 
 COPY --from=build /home/app/target/*.jar /usr/local/lib/app.jar
 
-ENV CUSTOM_TEMP_DIR /home/app/tempfiles
+ENV CUSTOM_TEMP_DIR /home/app/tempfiles/
 
 ENV SPRING_PROFILES_ACTIVE=dev
 ENV AZURE_STORAGE_CONTAINER_NAME_TEMP_VIDEO=private-container
@@ -43,6 +43,7 @@ ENV KAFKA_EVENTHUB_NAMESPACE=cognitube-kafka
 ENV KAFKA_VIDEO_PROCESS_TOPIC=video-process
 ENV KAFKA_VIDEO_AI_TOPIC=video-ai
 ENV KAFKA_VIDEO_REENCODE_TOPIC=video-reencode
+ENV KAFKA_VIDEO_AUDIO_EXTRACTION_TOPIC=video-audio-extraction
 ENV KAFKA_VIDEO_PROCESS_GROUP_ID=video-process-group
 ENV KAFKA_EVENTHUB_USERNAME=\$ConnectionString
 

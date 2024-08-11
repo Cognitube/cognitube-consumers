@@ -2,6 +2,7 @@ package com.cognitube.consumer.config;
 
 import com.azure.storage.blob.BlobServiceClient;
 import com.cognitube.consumer.consumer.VideoAiDataConsumer;
+import com.cognitube.consumer.consumer.VideoAudioExtractionConsumer;
 import com.cognitube.consumer.consumer.VideoEncodeConsumer;
 import com.cognitube.consumer.consumer.VideoProcessConsumer;
 import com.cognitube.consumer.mapper.NotificationMapper;
@@ -9,7 +10,6 @@ import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.producer.VideoProcessProducer;
 import com.cognitube.consumer.service.BlobService;
 import com.cognitube.consumer.service.NotificationService;
-import com.cognitube.consumer.service.VideoEncodingService;
 import com.cognitube.consumer.service.VideoProcessingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -68,6 +68,21 @@ public class ConsumerConfig {
     }
 
     @Bean
+    public VideoAudioExtractionConsumer videoAudioExtractionConsumer(
+            ObjectMapper objectMapper,
+            VideoProcessingService videoProcessingService,
+            @Value("${application.keyword.service.url}") String keywordServiceUrl,
+            @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC
+    ) {
+        return new VideoAudioExtractionConsumer(
+                objectMapper,
+                videoProcessingService,
+                keywordServiceUrl,
+                KAFKA_VIDEO_AI_TOPIC
+        );
+    }
+
+    @Bean
     public ObjectMapper objectMapper() {
         return new ObjectMapper();
     }
@@ -105,23 +120,15 @@ public class ConsumerConfig {
     @Bean
     public VideoProcessConsumer videoProcessConsumer(
             ObjectMapper objectMapper,
-            BlobService blobService,
             VideoProcessProducer videoProcessProducer,
-            VideoEncodingService videoEncodingService,
             @Value("${kafka.video.process.topic}") String KAFKA_VIDEO_PROCESS_TOPIC,
-            @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
-            @Value("${application.keyword.service.url}") String keywordServiceUrl,
             @Value("${application.transcoding.service.url}") String transcodingServiceUrl,
             VideoProcessingService videoProcessingService
     ) {
         return new VideoProcessConsumer(
                 objectMapper,
-                blobService,
                 videoProcessProducer,
-                videoEncodingService,
                 KAFKA_VIDEO_PROCESS_TOPIC,
-                KAFKA_VIDEO_AI_TOPIC,
-                keywordServiceUrl,
                 transcodingServiceUrl,
                 videoProcessingService
         );
@@ -153,18 +160,6 @@ public class ConsumerConfig {
         );
     }
 
-
-    @Bean
-    public VideoEncodingService videoEncodingService(
-            @Value("${application.encoding.default.audio.bit.rate.kbps}") int DEFAULT_AUDIO_BIT_RATE_KBPS,
-            @Value("${application.encoding.default.sampling.rate}") int DEFAULT_SAMPLING_RATE
-    ) {
-        return new VideoEncodingService(
-                DEFAULT_AUDIO_BIT_RATE_KBPS,
-                DEFAULT_SAMPLING_RATE
-        );
-    }
-
     @Bean
     public VideoProcessProducer videoProcessProducer(
             KafkaTemplate<String, String> kafkaTemplate,
@@ -182,14 +177,16 @@ public class ConsumerConfig {
             RedisTemplate<String, String> redisTemplate,
             @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
             @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC,
-            NotificationService notificationService
+            NotificationService notificationService,
+            @Value("${application.transcoding.service.url}") String transcodingServiceUrl
     ) {
         return new VideoProcessingService(
                 videoMapper,
                 redisTemplate,
                 KAFKA_VIDEO_AI_TOPIC,
                 KAFKA_VIDEO_REENCODE_TOPIC,
-                notificationService
+                notificationService,
+                transcodingServiceUrl
         );
     }
 }
