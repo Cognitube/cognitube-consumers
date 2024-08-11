@@ -3,6 +3,7 @@ package com.cognitube.consumer.consumer.dao;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author Haozhe Zhang
@@ -11,9 +12,9 @@ import lombok.Data;
  * @description For sending AI extraction request
  * @date 2024/8/11 13:55:39
  */
-@Builder(setterPrefix = "set", builderClassName = "Builder")
 @AllArgsConstructor
 @Data
+@NoArgsConstructor
 public class VideoAudioExtractionMessage implements Message {
     private String videoId;
     private String audioUrl;
