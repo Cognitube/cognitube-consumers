@@ -37,17 +37,15 @@ public class VideoProcessConsumer {
     private final ObjectMapper objectMapper;
     private final VideoProcessProducer videoProcessProducer;
     private final String KAFKA_VIDEO_PROCESS_TOPIC;
-    private final String transcodingServiceUrl;
     private final VideoProcessingService videoProcessingService;
 
     @KafkaListener(topics = "${kafka.video.process.topic}", groupId = "${kafka.video.process.group.id}")
-    public void consumeProcessVideoMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
-        process(record, acknowledgment);
+    public void consumeProcessVideoMessage(ConsumerRecord<String, String> record) {
+        process(record);
     }
 
-    private void process(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
+    private void process(ConsumerRecord<String, String> record) {
         VideoUploadMessage message = null;
-        acknowledgment.acknowledge();
 
         try {
             message = objectMapper.readValue(record.value(), VideoUploadMessage.class);

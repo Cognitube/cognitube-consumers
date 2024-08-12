@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - '**'
+  release:
+    types:
+      - created
 
 jobs:
   build-and-push:
@@ -26,9 +29,11 @@ jobs:
         id: prep
         run: |
           if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
-            echo "::set-output name=tag::latest"
+            echo "tag=latest" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_ENV
           else
-            echo "::set-output name=tag::$(date +'%Y%m%d%H%M%S')-$(git rev-parse --short HEAD)"
+            echo "tag=$(date +'%Y%m%d%H%M%S')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           fi
 
       - name: Build and Push Docker image
@@ -37,14 +42,17 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: haozhealexzhang/cognitube-consumers:${{ steps.prep.outputs.tag }}
+          tags: |
+            haozhealexzhang/cognitube-consumers:${{ env.tag }}
+            haozhealexzhang/cognitube-consumers:latest
 
       - name: List Docker images after build
         run: docker images
 
       - name: Clean up Post Run
         run: |
-          docker rmi haozhealexzhang/cognitube-consumers:${{ steps.prep.outputs.tag }} || true
-          if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
+          docker rmi haozhealexzhang/cognitube-consumers:${{ env.tag }} || true
+          if [[ "${GITHUB_REF}" == 'refs/heads/main' ]]; then
             docker rmi haozhealexzhang/cognitube-consumers:latest || true
           fi
+      

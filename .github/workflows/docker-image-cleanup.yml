@@ -32,7 +32,7 @@ jobs:
         run: |
           for TAG in ${{ steps.fetch-tags.outputs.old_tags }}
           do
-            if [[ "$TAG" != "latest" ]]; then
+            if [[ "$TAG" != "latest" ]] && ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               docker rmi haozhealexzhang/cognitube-consumers:$TAG
               docker push haozhealexzhang/cognitube-consumers:$TAG
             fi

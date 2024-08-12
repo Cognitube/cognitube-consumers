@@ -122,14 +122,12 @@ public class ConsumerConfig {
             ObjectMapper objectMapper,
             VideoProcessProducer videoProcessProducer,
             @Value("${kafka.video.process.topic}") String KAFKA_VIDEO_PROCESS_TOPIC,
-            @Value("${application.transcoding.service.url}") String transcodingServiceUrl,
             VideoProcessingService videoProcessingService
     ) {
         return new VideoProcessConsumer(
                 objectMapper,
                 videoProcessProducer,
                 KAFKA_VIDEO_PROCESS_TOPIC,
-                transcodingServiceUrl,
                 videoProcessingService
         );
     }
