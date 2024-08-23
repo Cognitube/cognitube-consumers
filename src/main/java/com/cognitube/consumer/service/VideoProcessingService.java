@@ -125,9 +125,13 @@ public class VideoProcessingService {
             zSetOps.add(videoProcessOvertimeKey, videoId, System.currentTimeMillis() + VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR * 1000);
             redisTemplate.expire(videoProcessOvertimeKey, VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR, TimeUnit.HOURS);
 
+            log.info("Video processing overtime key: {}", videoProcessOvertimeKey);
+
             SetOperations<String, String> setOps = redisTemplate.opsForSet();
             setOps.add(videoProcessOvertimeAllCharsKey, videoId.substring(videoId.length() - 1));
             redisTemplate.expire(videoProcessOvertimeAllCharsKey, VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR, TimeUnit.HOURS);
+
+            log.info("Video processing overtime all chars key: {}", videoProcessOvertimeAllCharsKey);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
