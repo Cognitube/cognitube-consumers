@@ -122,8 +122,8 @@ public class VideoProcessingService {
             redisTemplate.expire(videoProcessStatusKey, 12, TimeUnit.HOURS);
 
             final ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
-            zSetOps.add(videoProcessOvertimeKey, videoId, System.currentTimeMillis() + VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR * 60 * 60 * 1000);
-            redisTemplate.expire(videoProcessOvertimeKey, VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR, TimeUnit.MINUTES);
+            zSetOps.add(videoProcessOvertimeKey, videoId, System.currentTimeMillis() + VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR * 1000);
+            redisTemplate.expire(videoProcessOvertimeKey, VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR, TimeUnit.HOURS);
 
             SetOperations<String, String> setOps = redisTemplate.opsForSet();
             setOps.add(videoProcessOvertimeAllCharsKey, videoId.substring(videoId.length() - 1));
