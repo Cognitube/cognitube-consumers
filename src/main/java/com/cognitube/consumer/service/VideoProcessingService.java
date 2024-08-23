@@ -19,6 +19,8 @@ import org.jcodec.common.io.NIOUtils;
 import org.json.JSONObject;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
@@ -47,6 +49,7 @@ public class VideoProcessingService {
     private final String KAFKA_VIDEO_REENCODE_TOPIC;
     private final NotificationService notificationService;
     private final String transcodingServiceUrl;
+    private final Integer VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR;
 
     public boolean isVideoProcessedOrProcessing(String videoId, int retryCount) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
@@ -105,6 +108,8 @@ public class VideoProcessingService {
 
     public void recordVideoProcessingStatus(String videoId, Long userId, String videoName, int retryCount) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        final String videoProcessOvertimeKey = RedisKeys.getVideoProcessingOvertimeKey(videoId);
+        final String videoProcessOvertimeAllCharsKey = RedisKeys.getVideoProcessingOvertimeAllCharsKey();
         try {
             final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
             hashOps.put(videoProcessStatusKey, KAFKA_VIDEO_REENCODE_TOPIC, "pending");
@@ -115,6 +120,14 @@ public class VideoProcessingService {
             hashOps.put(videoProcessStatusKey, "retryCount", String.valueOf(retryCount));
             hashOps.put(videoProcessStatusKey, "videoDuration", "0.0");
             redisTemplate.expire(videoProcessStatusKey, 12, TimeUnit.HOURS);
+
+            final ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
+            zSetOps.add(videoProcessOvertimeKey, videoId, System.currentTimeMillis() + VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR * 60 * 60 * 1000);
+            redisTemplate.expire(videoProcessOvertimeKey, VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR, TimeUnit.HOURS);
+
+            SetOperations<String, String> setOps = redisTemplate.opsForSet();
+            setOps.add(videoProcessOvertimeAllCharsKey, videoId.substring(videoId.length() - 1));
+            redisTemplate.expire(videoProcessOvertimeAllCharsKey, VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR, TimeUnit.HOURS);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

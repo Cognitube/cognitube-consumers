@@ -28,6 +28,7 @@ ENV APPLICATION_OPENAI_KEY=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
 ENV APPLICATION_WHISPER_URL=https://api.openai.com/v1/audio/transcriptions
 ENV APPLICATION_GPT_URL=https://api.openai.com/v1/chat/completions
 ENV APPLICATION_AUDIO_MAX_SIZE=26214400
+ENV APPLICATION_VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR=5
 
 ENV AZURE_FRONTDOOR_URL=https://cognitube-hfegcsabcrgybtcw.z01.azurefd.net
 

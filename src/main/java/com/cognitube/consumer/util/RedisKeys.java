@@ -11,11 +11,15 @@ public class RedisKeys {
 
     private static final String SPLITTER = ":";
 
-    private static final String PREFIX_VIDEO_PROCESSING_STATUS = "video-processing-status";
+    private static final String PREFIX_VIDEO_PROCESSING_STATUS = "video:processing:status";
     
     private static final String USER_WEEKLY_UPLOAD_LIMIT = "user:weekly:upload:limit";
 
-    private static final String PREFIX_VIDEO_PROCESSING_LOCK = "video-processing-lock";
+    private static final String PREFIX_VIDEO_PROCESSING_LOCK = "video:processing:lock";
+
+    private static final String PREFIX_VIDEO_PROCESSING_OVERTIME = "video:processing:overtime";
+
+    private static final String PREFIX_VIDEO_PROCESSING_OVERTIME_ALL_CHARS = "video:processing:overtime:all:chars";
 
     public static String getVideoProcessingStatusKey(String videoId) {
         return PREFIX_VIDEO_PROCESSING_STATUS + SPLITTER + videoId;
@@ -27,5 +31,13 @@ public class RedisKeys {
 
     public static String getVideoProcessingLockKey(String videoId) {
         return PREFIX_VIDEO_PROCESSING_LOCK + SPLITTER + videoId;
+    }
+
+    public static String getVideoProcessingOvertimeKey(String videoId) {
+        return PREFIX_VIDEO_PROCESSING_OVERTIME + SPLITTER + videoId.substring(videoId.length() - 1);
+    }
+
+    public static String getVideoProcessingOvertimeAllCharsKey() {
+        return PREFIX_VIDEO_PROCESSING_OVERTIME_ALL_CHARS;
     }
 }

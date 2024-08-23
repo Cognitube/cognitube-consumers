@@ -176,7 +176,8 @@ public class ConsumerConfig {
             @Value("${kafka.video.ai.topic}") String KAFKA_VIDEO_AI_TOPIC,
             @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC,
             NotificationService notificationService,
-            @Value("${application.transcoding.service.url}") String transcodingServiceUrl
+            @Value("${application.transcoding.service.url}") String transcodingServiceUrl,
+            @Value("${application.video.processing.overtime.threshold.in.hour}") Integer VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR
     ) {
         return new VideoProcessingService(
                 videoMapper,
@@ -184,7 +185,8 @@ public class ConsumerConfig {
                 KAFKA_VIDEO_AI_TOPIC,
                 KAFKA_VIDEO_REENCODE_TOPIC,
                 notificationService,
-                transcodingServiceUrl
+                transcodingServiceUrl,
+                VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR
         );
     }
 }
