@@ -64,8 +64,6 @@ public class VideoProcessConsumer {
             }
 
             log.info("Start processing video: {}", message.getVideoId());
-            videoProcessingService.createVideoTranscodingJob(message.getVideoUrl(), message.getVideoId(), 0);
-            videoProcessingService.createAudioExtractionJob(message.getVideoUrl(), message.getVideoId(), 0);
 
             videoProcessingService.recordVideoProcessingStatus(
                     message.getVideoId(),
@@ -73,6 +71,9 @@ public class VideoProcessConsumer {
                     message.getVideoName(),
                     message.getRetryCount()
             );
+
+            videoProcessingService.createVideoTranscodingJob(message.getVideoUrl(), message.getVideoId(), 0);
+            videoProcessingService.createAudioExtractionJob(message.getVideoUrl(), message.getVideoId(), 0);
         } catch (Exception e) {
             //TODO: specify more exception types
             log.error("Failed to process video", e);
