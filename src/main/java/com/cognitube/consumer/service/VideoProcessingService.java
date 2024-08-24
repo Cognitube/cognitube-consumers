@@ -13,6 +13,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.jcodec.api.FrameGrab;
 import org.jcodec.common.io.FileChannelWrapper;
 import org.jcodec.common.io.NIOUtils;
@@ -277,8 +278,10 @@ public class VideoProcessingService {
             request.setEntity(entity);
 
             HttpResponse response = httpClient.execute(request);
-            if (response.getStatusLine().getStatusCode() != 200) {
-                log.error("Failed to send audio extraction request {}", response.getEntity().getContent().toString());
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200) {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                log.error("Failed to send audio extraction request {}: {}", statusCode, responseBody);
                 throw new RuntimeException("Failed to send audio extraction request");
             }
         } catch (Exception e) {
@@ -299,8 +302,10 @@ public class VideoProcessingService {
             request.setEntity(entity);
 
             HttpResponse response = httpClient.execute(request);
-            if (response.getStatusLine().getStatusCode() != 200) {
-                log.error("Failed to send transcoding request {}", response.getEntity().getContent().toString());
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200) {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                log.error("Failed to send transcoding request {}: {}", statusCode, responseBody);
                 throw new RuntimeException("Failed to send transcoding request");
             }
         } catch (Exception e) {
