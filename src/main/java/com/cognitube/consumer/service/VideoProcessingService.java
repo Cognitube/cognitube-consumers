@@ -301,6 +301,7 @@ public class VideoProcessingService {
             final StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
             request.setEntity(entity);
 
+            log.info(transcodingServiceUrl);
             HttpResponse response = httpClient.execute(request);
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200) {
