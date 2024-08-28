@@ -176,14 +176,27 @@ public class VideoProcessingService {
     }
 
     public void handleFailedProcessing(String videoId) {
-        String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         if (Boolean.FALSE.equals(redisTemplate.hasKey(videoProcessStatusKey))) {
-            throw new RuntimeException("Video process status key does not exist");
+            log.error("Video process status key does not exist");
+        } else {
+            HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
+            String userUploadVideoUrl = (String) hashOps.get(videoProcessStatusKey, "videoUrl");
+            blobService.safeDeleteFile(userUploadVideoUrl);
         }
-        HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
-        String userUploadVideoUrl = (String) hashOps.get(videoProcessStatusKey, "videoUrl");
 
-        Video video = videoMapper.selectVideoById(videoId);
+        Video video = null;
+        try {
+            video = videoMapper.selectVideoById(videoId);
+        } catch (Exception e) {
+            log.error("Failed to fetch video by ID: {}", videoId, e);
+        }
+
+        if (video == null) {
+            log.error("Video cannot found for ID: {}", videoId);
+            return;
+        }
+
         Long userId = video.getAuthorId();
         String videoName = video.getTitle();
         String encodedVideoUrl = video.getFileLink();
@@ -192,11 +205,12 @@ public class VideoProcessingService {
         String transcriptUrl = video.getTranscriptLink();
 
         // Send notification to user
-        final String notificationMessage = String.format("Your video %s has failed to process. Please try again later!", videoName);
-        notificationService.addSystemNotification(userId, notificationMessage);
+        if (userId != null) {
+            final String notificationMessage = String.format("Your video %s has failed to process. Please try again later!", videoName);
+            notificationService.addSystemNotification(userId, notificationMessage);
+        }
 
         // Delete Blob files if exist
-        blobService.safeDeleteFile(userUploadVideoUrl);
         blobService.safeDeleteFile(encodedVideoUrl);
         blobService.safeDeleteFile(coverImageUrl);
         blobService.safeDeleteFile(keywordsUrl);
