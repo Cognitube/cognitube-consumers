@@ -3,7 +3,6 @@ package com.cognitube.consumer.consumer;
 import com.cognitube.consumer.consumer.dao.VideoEncodeMessage;
 import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.model.Video;
-import com.cognitube.consumer.service.VideoEncodingService;
 import com.cognitube.consumer.service.VideoProcessingService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,12 +27,11 @@ public class VideoEncodeConsumer {
     private final VideoProcessingService videoProcessingService;
 
     @KafkaListener(topics = "${kafka.video.reencode.topic}", groupId = "${kafka.video.process.group.id}")
-    public void consumeReencodeMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
-        process(record, acknowledgment);
+    public void consumeReencodeMessage(ConsumerRecord<String, String> record) {
+        process(record);
     }
 
-    private void process(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
-        acknowledgment.acknowledge();
+    private void process(ConsumerRecord<String, String> record) {
         VideoEncodeMessage message;
         try {
             message = objectMapper.readValue(record.value(), VideoEncodeMessage.class);
@@ -43,6 +41,10 @@ public class VideoEncodeConsumer {
         }
 
         try {
+            if (videoProcessingService.isVideoProcessingStepDoneOrFailed(message.getVideoId(), KAFKA_VIDEO_REENCODE_TOPIC)) {
+                return;
+            }
+
             final boolean isTranscodingSuccessful = message.isSuccess();
             if (!isTranscodingSuccessful) {
                 final String error = message.getError();
@@ -66,7 +68,16 @@ public class VideoEncodeConsumer {
         } catch (Exception e) {
             //TODO: specify more exception types
             log.error("Failed to reencode video", e);
-            videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
+            if (message.getRetryCount() > 3) {
+                log.error("Failed to transcode video after 3 retries. Terminating transcoding for video.");
+                videoProcessingService.markVideoProcessingStatusAsFailed(message.getVideoId());
+            } else {
+                try {
+                    videoProcessingService.createVideoTranscodingJob(message.getVideoUrl(), message.getVideoId(), message.getRetryCount() + 1);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
         }
     }
 }

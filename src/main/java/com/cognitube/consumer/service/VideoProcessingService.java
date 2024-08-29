@@ -7,16 +7,29 @@ import com.cognitube.consumer.util.DateUtil;
 import com.cognitube.consumer.util.RedisKeys;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.jcodec.api.FrameGrab;
 import org.jcodec.common.io.FileChannelWrapper;
 import org.jcodec.common.io.NIOUtils;
+import org.json.JSONObject;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -37,6 +50,8 @@ public class VideoProcessingService {
     private final String KAFKA_VIDEO_REENCODE_TOPIC;
     private final NotificationService notificationService;
     private final BlobService blobService;
+    private final String transcodingServiceUrl;
+    private final Integer VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR;
 
     public boolean isVideoProcessedOrProcessing(String videoId, int retryCount) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
@@ -61,8 +76,42 @@ public class VideoProcessingService {
         return false;
     }
 
+    public boolean isAudioExtractedOrExtracting(String videoId, int retryCount) {
+        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        try {
+            final boolean status = Boolean.TRUE.equals(redisTemplate.hasKey(videoProcessStatusKey));
+            if (!status) {
+                throw new RuntimeException("Video process status key does not exist");
+            }
+
+            final int count = redisTemplate.opsForHash().get(videoProcessStatusKey, "audioExtractionRetryCount") == null
+                    ? -1 : Integer.parseInt((String) Objects.requireNonNull(
+                    redisTemplate.opsForHash().get(videoProcessStatusKey, "audioExtractionRetryCount")
+            ));
+            if (count >= retryCount) {
+                return true;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return false;
+    }
+
+    public void recordAudioExtractionStatus(String videoId, int retryCount) {
+        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        try {
+            final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
+            hashOps.put(videoProcessStatusKey, "audioExtractionRetryCount", String.valueOf(retryCount));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void recordVideoProcessingStatus(String videoId, Long userId, String videoName, int retryCount, String videoUrl) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        final String videoProcessOvertimeKey = RedisKeys.getVideoProcessingOvertimeKey(videoId);
+        final String videoProcessOvertimeAllCharsKey = RedisKeys.getVideoProcessingOvertimeAllCharsKey();
         try {
             final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
             hashOps.put(videoProcessStatusKey, KAFKA_VIDEO_REENCODE_TOPIC, "pending");
@@ -71,8 +120,21 @@ public class VideoProcessingService {
             hashOps.put(videoProcessStatusKey, "videoName", videoName);
             hashOps.put(videoProcessStatusKey, "userId", userId.toString());
             hashOps.put(videoProcessStatusKey, "retryCount", String.valueOf(retryCount));
+            hashOps.put(videoProcessStatusKey, "videoDuration", "0.0");
             hashOps.put(videoProcessStatusKey, "videoUrl", videoUrl);
             redisTemplate.expire(videoProcessStatusKey, 12, TimeUnit.HOURS);
+
+            final ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
+            zSetOps.add(videoProcessOvertimeKey, videoId, System.currentTimeMillis() + VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR * 60 * 60 * 1000);
+            redisTemplate.expire(videoProcessOvertimeKey, VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR, TimeUnit.HOURS);
+
+            log.info("Video processing overtime key: {}", videoProcessOvertimeKey);
+
+            SetOperations<String, String> setOps = redisTemplate.opsForSet();
+            setOps.add(videoProcessOvertimeAllCharsKey, videoId.substring(videoId.length() - 1));
+            redisTemplate.expire(videoProcessOvertimeAllCharsKey, VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR, TimeUnit.HOURS);
+
+            log.info("Video processing overtime all chars key: {}", videoProcessOvertimeAllCharsKey);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -129,7 +191,17 @@ public class VideoProcessingService {
 
     public void updateVideoStatusIfDone(String videoId) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        final String lockKey = RedisKeys.getVideoProcessingLockKey(videoId); // 定义一个锁键
+        final String lockValue = UUID.randomUUID().toString(); // 锁的唯一值
+        final int lockExpiration = 30; // 锁的过期时间，单位为秒
+
         try {
+            Boolean acquiredLock = redisTemplate.opsForValue().setIfAbsent(lockKey, lockValue, lockExpiration, TimeUnit.SECONDS);
+            if (Boolean.FALSE.equals(acquiredLock)) {
+                log.info("Failed to acquire lock for video processing status update for video {}", videoId);
+                return;
+            }
+
             final boolean keyExists = Boolean.TRUE.equals(redisTemplate.hasKey(videoProcessStatusKey));
             if (!keyExists) {
                 // this happens when the temp table has expired in the middle of the process
@@ -153,6 +225,10 @@ public class VideoProcessingService {
                 return;
             }
 
+            if ("done".equals(overallStatus)) {
+                return;
+            }
+
             hashOps.put(videoProcessStatusKey, "status", "done");
 
             final Video video = Video.builder()
@@ -172,7 +248,17 @@ public class VideoProcessingService {
             log.info("Video has been processed.");
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+            releaseLock(lockKey, lockValue);
         }
+    }
+
+    private void releaseLock(String lockKey, String lockValue) {
+        // 使用 Lua 脚本原子性地释放锁
+        String script = "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+                "return redis.call('del', KEYS[1]) " +
+                "else return 0 end";
+        redisTemplate.execute(new DefaultRedisScript<>(script, Long.class), Collections.singletonList(lockKey), lockValue);
     }
 
     public void handleFailedProcessing(String videoId) {
@@ -224,6 +310,54 @@ public class VideoProcessingService {
     public void removeFile(File file) {
         if (file != null && file.exists()) {
             file.delete();
+        }
+    }
+
+    public void createAudioExtractionJob(String videoUrl, String videoId, int retryCount) {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            final HttpPost request = new HttpPost(transcodingServiceUrl + "/v1/extract-audio");
+
+            final JSONObject json = new JSONObject();
+            json.put("videoId", videoId);
+            json.put("videoUrl", videoUrl);
+            json.put("retryCount", retryCount);
+
+            final StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
+            request.setEntity(entity);
+
+            HttpResponse response = httpClient.execute(request);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200) {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                log.error("Failed to send audio extraction request {}: {}", statusCode, responseBody);
+                throw new RuntimeException("Failed to send audio extraction request");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send audio extraction request", e);
+        }
+    }
+
+    public void createVideoTranscodingJob(String videoUrl, String videoId, int retryCount) {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            final HttpPost request = new HttpPost(transcodingServiceUrl + "/v1/transcode");
+
+            final JSONObject json = new JSONObject();
+            json.put("videoId", videoId);
+            json.put("videoUrl", videoUrl);
+            json.put("retryCount", retryCount);
+
+            final StringEntity entity = new StringEntity(json.toString(), ContentType.APPLICATION_JSON);
+            request.setEntity(entity);
+
+            HttpResponse response = httpClient.execute(request);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200) {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                log.error("Failed to send transcoding request {}: {}", statusCode, responseBody);
+                throw new RuntimeException("Failed to send transcoding request");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send transcoding request", e);
         }
     }
 }

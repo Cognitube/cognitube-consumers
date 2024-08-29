@@ -24,12 +24,11 @@ public class VideoAiDataConsumer {
     private final VideoProcessingService videoProcessingService;
 
     @KafkaListener(topics = "${kafka.video.ai.topic}", groupId = "${kafka.video.process.group.id}")
-    public void consumeAiDataMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
-        process(record, acknowledgment);
+    public void consumeAiDataMessage(ConsumerRecord<String, String> record) {
+        process(record);
     }
 
-    private void process(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
-        acknowledgment.acknowledge();
+    private void process(ConsumerRecord<String, String> record) {
         VideoAiDataMessage message;
 
         try {

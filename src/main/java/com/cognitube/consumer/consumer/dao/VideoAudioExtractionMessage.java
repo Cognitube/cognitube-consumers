@@ -6,21 +6,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * @author Yijing Yang
+ * @author Haozhe Zhang
  * @version 1.0
- * @project consumer
- * @description Message for video encode subtasks
- * @date 2024/7/10 20:20:20
+ * @project cognitube-consumers
+ * @description For sending AI extraction request
+ * @date 2024/8/11 13:55:39
  */
-@Data
 @AllArgsConstructor
+@Data
 @NoArgsConstructor
-@Builder(builderClassName = "Builder", setterPrefix = "set")
-public class VideoEncodeMessage implements Message {
+public class VideoAudioExtractionMessage implements Message {
     private String videoId;
-    private String videoUrl;
+    private String audioUrl;
     private boolean success;
-    private double videoDuration;
     private String error;
     private int retryCount;
 }
