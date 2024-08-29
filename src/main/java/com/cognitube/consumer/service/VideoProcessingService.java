@@ -49,6 +49,7 @@ public class VideoProcessingService {
     private final String KAFKA_VIDEO_AI_TOPIC;
     private final String KAFKA_VIDEO_REENCODE_TOPIC;
     private final NotificationService notificationService;
+    private final BlobService blobService;
     private final String transcodingServiceUrl;
     private final Integer VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR;
 
@@ -107,7 +108,7 @@ public class VideoProcessingService {
         }
     }
 
-    public void recordVideoProcessingStatus(String videoId, Long userId, String videoName, int retryCount) {
+    public void recordVideoProcessingStatus(String videoId, Long userId, String videoName, int retryCount, String videoUrl) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
         final String videoProcessOvertimeKey = RedisKeys.getVideoProcessingOvertimeKey(videoId);
         final String videoProcessOvertimeAllCharsKey = RedisKeys.getVideoProcessingOvertimeAllCharsKey();
@@ -120,6 +121,7 @@ public class VideoProcessingService {
             hashOps.put(videoProcessStatusKey, "userId", userId.toString());
             hashOps.put(videoProcessStatusKey, "retryCount", String.valueOf(retryCount));
             hashOps.put(videoProcessStatusKey, "videoDuration", "0.0");
+            hashOps.put(videoProcessStatusKey, "videoUrl", videoUrl);
             redisTemplate.expire(videoProcessStatusKey, 12, TimeUnit.HOURS);
 
             final ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
@@ -215,7 +217,7 @@ public class VideoProcessingService {
             final double videoDuration = Double.parseDouble((String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "videoDuration")));
 
             if ("failed".equals(overallStatus)) {
-                handleFailedProcessing(userId, videoName);
+                handleFailedProcessing(videoId);
                 return;
             }
 
@@ -259,10 +261,56 @@ public class VideoProcessingService {
         redisTemplate.execute(new DefaultRedisScript<>(script, Long.class), Collections.singletonList(lockKey), lockValue);
     }
 
-    // TODO: add more handling for database record and temp files on blob
-    private void handleFailedProcessing(Long userId, String videoName) {
-        final String notificationMessage = String.format("Your video %s has failed to process. Please try again later!", videoName);
-        notificationService.addSystemNotification(userId, notificationMessage);
+    public void handleFailedProcessing(String videoId) {
+        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
+        if (Boolean.FALSE.equals(redisTemplate.hasKey(videoProcessStatusKey))) {
+            log.error("Video process status key does not exist");
+        } else {
+            HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
+            String userUploadVideoUrl = (String) hashOps.get(videoProcessStatusKey, "videoUrl");
+            blobService.safeDeleteFile(userUploadVideoUrl);
+        }
+
+        Video video = null;
+        try {
+            video = videoMapper.selectVideoById(videoId);
+        } catch (Exception e) {
+            log.error("Failed to fetch video by ID: {}", videoId, e);
+        }
+
+        if (video == null) {
+            log.error("Video cannot found for ID: {}", videoId);
+            return;
+        }
+
+        Long userId = video.getAuthorId();
+        String videoName = video.getTitle();
+        String encodedVideoUrl = video.getFileLink();
+        String coverImageUrl = video.getCoverImageLink();
+        String keywordsUrl = video.getKeywordsLink();
+        String transcriptUrl = video.getTranscriptLink();
+
+        // Send notification to user
+        if (userId != null) {
+            final String notificationMessage = String.format("Your video %s has failed to process. Please try again later!", videoName);
+            notificationService.addSystemNotification(userId, notificationMessage);
+        }
+
+        // Delete Blob files if exist
+        blobService.safeDeleteFile(encodedVideoUrl);
+        blobService.safeDeleteFile(coverImageUrl);
+        blobService.safeDeleteFile(keywordsUrl);
+        blobService.safeDeleteFile(transcriptUrl);
+
+        // Delete database and redis record
+        videoMapper.deleteVideoById(videoId);
+        redisTemplate.delete(videoProcessStatusKey);
+    }
+
+    public void removeFile(File file) {
+        if (file != null && file.exists()) {
+            file.delete();
+        }
     }
 
     public void createAudioExtractionJob(String videoUrl, String videoId, int retryCount) {

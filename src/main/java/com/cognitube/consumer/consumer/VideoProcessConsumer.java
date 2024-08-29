@@ -61,7 +61,8 @@ public class VideoProcessConsumer {
                     message.getVideoId(),
                     message.getUserId(),
                     message.getVideoName(),
-                    message.getRetryCount()
+                    message.getRetryCount(),
+                    message.getVideoUrl()
             );
 
             videoProcessingService.createVideoTranscodingJob(message.getVideoUrl(), message.getVideoId(), 0);
