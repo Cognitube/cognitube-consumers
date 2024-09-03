@@ -42,7 +42,6 @@ public class KafkaProducerConfig {
             configProps.put("security.protocol", "SASL_SSL");
             configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, namespace + ".servicebus.windows.net:9093");
         }
-        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, namespace + ".servicebus.windows.net:9093");
         configProps.put("sasl.mechanism", "PLAIN");
         configProps.put("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"" + username + "\" password=\"" + password + "\";");
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
