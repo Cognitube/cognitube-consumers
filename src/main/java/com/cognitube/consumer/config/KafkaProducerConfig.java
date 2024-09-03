@@ -28,11 +28,20 @@ public class KafkaProducerConfig {
     private String namespace;
     private String username;
     private String password;
+    private String bootstrapServers;
 
     @Bean
     public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
-        configProps.put("security.protocol", "SASL_SSL");
+        if (namespace == null || namespace.isEmpty()) {
+//             local
+            configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        }
+        else {
+            // event hub
+            configProps.put("security.protocol", "SASL_SSL");
+            configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, namespace + ".servicebus.windows.net:9093");
+        }
         configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, namespace + ".servicebus.windows.net:9093");
         configProps.put("sasl.mechanism", "PLAIN");
         configProps.put("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"" + username + "\" password=\"" + password + "\";");
