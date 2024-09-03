@@ -139,6 +139,10 @@ public class ConsumerConfig {
             @Value("${kafka.password}") String password,
             @Value("${kafka.bootstrap-servers}") String bootstrapServers
     ) {
+        System.out.println("Bootstrap Servers: " + bootstrapServers);
+        System.out.println("Namespace: " + namespace);
+        System.out.println("Username: " + username);
+        System.out.println("Password: " + password);
         return new KafkaConsumerConfig(
                 namespace,
                 username,
@@ -154,6 +158,11 @@ public class ConsumerConfig {
             @Value("${kafka.password}") String password,
             @Value("${kafka.bootstrap-servers}") String bootstrapServers
     ) {
+        System.out.println("Bootstrap Servers: " + bootstrapServers);
+        System.out.println("Namespace: " + namespace);
+        System.out.println("Username: " + username);
+        System.out.println("Password: " + password);
+
         return new KafkaProducerConfig(
                 namespace,
                 username,
