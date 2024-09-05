@@ -21,6 +21,8 @@ public class RedisKeys {
 
     private static final String PREFIX_VIDEO_PROCESSING_OVERTIME_ALL_CHARS = "video:processing:overtime:all:chars";
 
+    private static final String PREFIX_VIDEO_CACHE_KEY = "video:cache";
+
     public static String getVideoProcessingStatusKey(String videoId) {
         return PREFIX_VIDEO_PROCESSING_STATUS + SPLITTER + videoId;
     }
@@ -39,5 +41,14 @@ public class RedisKeys {
 
     public static String getVideoProcessingOvertimeAllCharsKey() {
         return PREFIX_VIDEO_PROCESSING_OVERTIME_ALL_CHARS;
+    }
+
+    /**
+     * Get the key for video cache
+     * @param videoId
+     * @return
+     */
+    public static String getVideoCacheKey(String videoId) {
+        return PREFIX_VIDEO_CACHE_KEY + SPLITTER + videoId;
     }
 }

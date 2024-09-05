@@ -62,6 +62,8 @@ public class VideoAiDataConsumer {
                     .build();
 
             videoMapper.updateVideo(video);
+
+            videoProcessingService.invalidateVideoCache(videoId);
             log.info("Updated video ai data for video.");
         } catch (Exception e) {
             log.error("Failed to process video ai data", e);

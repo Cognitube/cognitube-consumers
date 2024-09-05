@@ -259,6 +259,16 @@ public class VideoProcessingService {
         }
     }
 
+    public void invalidateVideoCache(String videoId) {
+        final String videoCacheKey = RedisKeys.getVideoCacheKey(videoId);
+
+        try {
+            redisTemplate.delete(videoCacheKey);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void releaseLock(String lockKey, String lockValue) {
         // 使用 Lua 脚本原子性地释放锁
         String script = "if redis.call('get', KEYS[1]) == ARGV[1] then " +
