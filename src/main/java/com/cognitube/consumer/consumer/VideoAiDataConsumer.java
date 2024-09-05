@@ -53,10 +53,12 @@ public class VideoAiDataConsumer {
             videoId = message.getVideoId();
             final String keywordsUrl = message.getKeywordsUrl();
             final String transcriptUrl = message.getTranscriptUrl();
+            final String subtitleUrl = message.getSubtitleUrl();
             final Video video = Video.builder()
                     .setId(videoId)
                     .setTranscriptLink(transcriptUrl)
                     .setKeywordsLink(keywordsUrl)
+                    .setSubtitleLink(subtitleUrl)
                     .build();
 
             videoMapper.updateVideo(video);

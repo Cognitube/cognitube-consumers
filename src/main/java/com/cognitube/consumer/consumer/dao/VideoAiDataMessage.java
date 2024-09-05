@@ -20,4 +20,5 @@ public class VideoAiDataMessage implements Message {
     private String error;
     private String keywordsUrl;
     private String transcriptUrl;
+    private String subtitleUrl;
 }

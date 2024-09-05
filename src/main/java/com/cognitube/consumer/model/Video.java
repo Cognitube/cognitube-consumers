@@ -21,5 +21,6 @@ public class Video {
     private final String description;
     private final String dateCreated;
     private final VideoStatus status;
+    private final String subtitleLink;
 }
 
