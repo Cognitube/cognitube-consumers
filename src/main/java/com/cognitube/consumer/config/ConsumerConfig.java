@@ -136,12 +136,14 @@ public class ConsumerConfig {
     public KafkaConsumerConfig kafkaConsumerConfig(
             @Value("${kafka.eventhub.namespace}") String namespace,
             @Value("${kafka.username}") String username,
-            @Value("${kafka.password}") String password
+            @Value("${kafka.password}") String password,
+            @Value("${kafka.bootstrap-servers}") String bootstrapServers
     ) {
         return new KafkaConsumerConfig(
                 namespace,
                 username,
-                password
+                password,
+                bootstrapServers
         );
     }
 
@@ -149,12 +151,14 @@ public class ConsumerConfig {
     public KafkaProducerConfig kafkaProducerConfig(
             @Value("${kafka.eventhub.namespace}") String namespace,
             @Value("${kafka.username}") String username,
-            @Value("${kafka.password}") String password
+            @Value("${kafka.password}") String password,
+            @Value("${kafka.bootstrap-servers}") String bootstrapServers
     ) {
         return new KafkaProducerConfig(
                 namespace,
                 username,
-                password
+                password,
+                bootstrapServers
         );
     }
 

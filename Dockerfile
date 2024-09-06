@@ -40,12 +40,10 @@ ENV SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_GOOGLE_TOKEN_URI=https://oauth2.googl
 ENV SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_GOOGLE_AUTHORIZATION_URI=https://accounts.google.com/o/oauth2/v2/auth
 ENV APPLICATION_ADMIN_URL=https://cognitube-admin.thankfulfield-7c1523f0.eastus.azurecontainerapps.io
 
-ENV KAFKA_EVENTHUB_NAMESPACE=cognitube-kafka
 ENV KAFKA_VIDEO_PROCESS_TOPIC=video-process
 ENV KAFKA_VIDEO_AI_TOPIC=video-ai
 ENV KAFKA_VIDEO_REENCODE_TOPIC=video-reencode
 ENV KAFKA_VIDEO_AUDIO_EXTRACTION_TOPIC=video-audio-extraction
 ENV KAFKA_VIDEO_PROCESS_GROUP_ID=video-process-group
-ENV KAFKA_EVENTHUB_USERNAME=\$ConnectionString
 
 ENTRYPOINT [ "java", "-jar", "/usr/local/lib/app.jar" ]
