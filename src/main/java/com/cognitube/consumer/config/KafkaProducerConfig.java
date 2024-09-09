@@ -1,6 +1,7 @@
 package com.cognitube.consumer.config;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -23,6 +24,7 @@ import java.util.Map;
  */
 @Configuration
 @AllArgsConstructor
+@Slf4j
 public class KafkaProducerConfig {
 
     private String namespace;
@@ -33,6 +35,11 @@ public class KafkaProducerConfig {
     @Bean
     public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
+        log.info("namespace: " + namespace);
+        log.info("username: " + username);
+        log.info("password: " + password);
+        log.info("bootstrapServers: " + bootstrapServers);
+
         if (namespace == null || namespace.isEmpty()) {
 //             local
             configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
