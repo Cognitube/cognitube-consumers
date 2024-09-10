@@ -30,7 +30,6 @@ public class VideoEncodeConsumer {
     private final VideoMapper videoMapper;
     private final String KAFKA_VIDEO_REENCODE_TOPIC;
     private final VideoProcessingService videoProcessingService;
-    private final RedisTemplate<String, Double> redisTemplate;
 
     @KafkaListener(topics = "${kafka.video.reencode.topic}", groupId = "${kafka.video.process.group.id}")
     public void consumeReencodeMessage(ConsumerRecord<String, String> record) {
