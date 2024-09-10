@@ -57,13 +57,15 @@ public class ConsumerConfig {
             ObjectMapper objectMapper,
             VideoMapper videoMapper,
             @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC,
-            VideoProcessingService videoProcessingService
+            VideoProcessingService videoProcessingService,
+            RedisTemplate<String, Double> redisTemplate
         ) {
         return new VideoEncodeConsumer(
                 objectMapper,
                 videoMapper,
                 KAFKA_VIDEO_REENCODE_TOPIC,
-                videoProcessingService
+                videoProcessingService,
+                redisTemplate
         );
     }
 
