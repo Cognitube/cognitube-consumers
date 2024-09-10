@@ -69,11 +69,6 @@ public class VideoEncodeConsumer {
                     .build();
             videoMapper.updateVideo(video);
 
-//            TODO: add user id to message
-//            final String userWeeklyUploadLimitKey = RedisKeys.getUserWeeklyUploadLimitKey(userId, String.valueOf(DateUtil.getWeekOfYear(LocalDate.now())));
-//            redisTemplate.opsForValue().increment(userWeeklyUploadLimitKey, videoDuration);
-//            redisTemplate.expire(userWeeklyUploadLimitKey, 7, TimeUnit.DAYS);
-
             videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), KAFKA_VIDEO_REENCODE_TOPIC);
             videoProcessingService.updateVideoStatusIfDone(message.getVideoId());
         } catch (Exception e) {

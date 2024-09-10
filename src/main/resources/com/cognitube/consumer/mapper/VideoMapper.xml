@@ -28,4 +28,10 @@
     WHERE id = #{id}
     </update>
 
+  <select id="getVideoDuration" resultType="java.lang.Double">
+    SELECT length
+    FROM videos
+    WHERE id = #{id}
+  </select>
+
 </mapper>

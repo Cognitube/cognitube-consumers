@@ -231,6 +231,15 @@ public class VideoProcessingService {
                     .build();
             videoMapper.updateVideo(video);
 
+            final Double videoDuration = videoMapper.getVideoDuration(videoId);
+            if (videoDuration == null) {
+                throw new RuntimeException("Failed to get video duration");
+            }
+
+            final String userWeeklyUploadLimitKey = RedisKeys.getUserWeeklyUploadLimitKey(userId, String.valueOf(DateUtil.getWeekOfYear(LocalDate.now())));
+            redisTemplate.opsForValue().increment(userWeeklyUploadLimitKey, videoDuration);
+            redisTemplate.expire(userWeeklyUploadLimitKey, 7, TimeUnit.DAYS);
+
             final String notificationMessage = String.format("Your video %s has been successfully uploaded and processed!", videoName);
             notificationService.addSystemNotification(userId, notificationMessage);
 
