@@ -1,10 +1,7 @@
 package com.cognitube.consumer.config;
 
 import com.azure.storage.blob.BlobServiceClient;
-import com.cognitube.consumer.consumer.VideoAiDataConsumer;
-import com.cognitube.consumer.consumer.VideoAudioExtractionConsumer;
-import com.cognitube.consumer.consumer.VideoEncodeConsumer;
-import com.cognitube.consumer.consumer.VideoProcessConsumer;
+import com.cognitube.consumer.consumer.*;
 import com.cognitube.consumer.mapper.NotificationMapper;
 import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.producer.VideoProcessProducer;
@@ -27,6 +24,21 @@ import org.springframework.kafka.core.KafkaTemplate;
  */
 @Configuration
 public class ConsumerConfig {
+
+    @Bean
+    public VideoKeywordFetchConsumer videoKeywordFetchConsumer(
+            ObjectMapper objectMapper,
+            VideoProcessProducer videoProcessProducer,
+            @Value("${kafka.video.keyword.fetch.topic}") String KAFKA_VIDEO_KEYWORD_FETCH_TOPIC,
+            VideoProcessingService videoProcessingService
+    ) {
+        return new VideoKeywordFetchConsumer(
+                objectMapper,
+                videoProcessProducer,
+                KAFKA_VIDEO_KEYWORD_FETCH_TOPIC,
+                videoProcessingService
+        );
+    }
 
     @Bean
     public NotificationService notificationService(
@@ -181,7 +193,11 @@ public class ConsumerConfig {
             @Value("${kafka.video.reencode.topic}") String KAFKA_VIDEO_REENCODE_TOPIC,
             NotificationService notificationService,
             @Value("${application.transcoding.service.url}") String transcodingServiceUrl,
-            @Value("${application.video.processing.overtime.threshold.in.hour}") Integer VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR
+            @Value("${application.video.processing.overtime.threshold.in.hour}") Integer VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR,
+            @Value("${azure.speech.ai.endpoint}") String speechAiEndpoint,
+            @Value("${azure.speech.ai.subscription.key}") String speechAiSubscriptionKey,
+            ObjectMapper objectMapper,
+            @Value("${application.keyword.service.url}") String keywordServiceUrl
     ) {
         return new VideoProcessingService(
                 videoMapper,
@@ -190,7 +206,11 @@ public class ConsumerConfig {
                 KAFKA_VIDEO_REENCODE_TOPIC,
                 notificationService,
                 transcodingServiceUrl,
-                VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR
+                VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR,
+                speechAiEndpoint,
+                speechAiSubscriptionKey,
+                objectMapper,
+                keywordServiceUrl
         );
     }
 }

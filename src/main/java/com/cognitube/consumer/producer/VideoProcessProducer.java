@@ -49,7 +49,7 @@ public class VideoProcessProducer {
                     callback.onCompletion(null, ex instanceof Exception ? (Exception) ex : new RuntimeException(ex));
                 }
             } else {
-                log.info("Sent message asynchronously: {}", message);
+                log.debug("Sent message asynchronously: {}", message);
                 if (callback != null) {
                     callback.onCompletion(result.getRecordMetadata(), null);
                 }

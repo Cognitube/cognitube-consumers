@@ -1,13 +1,18 @@
 package com.cognitube.consumer.service;
 
+import com.cognitube.consumer.dto.request.TranscriptionRequest;
 import com.cognitube.consumer.enums.VideoStatus;
 import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.model.Video;
+import com.cognitube.consumer.model.response.AzureTranscriptionResponse;
 import com.cognitube.consumer.util.DateUtil;
 import com.cognitube.consumer.util.RedisKeys;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -24,6 +29,8 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.net.URI;
+import java.net.http.HttpRequest;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Objects;
@@ -49,6 +56,10 @@ public class VideoProcessingService {
     private final NotificationService notificationService;
     private final String transcodingServiceUrl;
     private final Integer VIDEO_PROCESSING_OVERTIME_THRESHOLD_IN_HOUR;
+    private final String speechAiEndpoint;
+    private final String speechAiSubscriptionKey;
+    private final ObjectMapper objectMapper;
+    private final String keywordServiceUrl;
 
     public boolean isVideoProcessedOrProcessing(String videoId, int retryCount) {
         final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
@@ -320,6 +331,46 @@ public class VideoProcessingService {
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to send transcoding request", e);
+        }
+    }
+
+    public void processTranscriptionResult(String transcriptionId) {
+        try (final CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            final HttpPost request = new HttpPost(keywordServiceUrl + "/v1/transcription/process");
+            final String jsonBody = objectMapper.writeValueAsString(TranscriptionRequest.builder().setId(transcriptionId).build());
+            final StringEntity entity = new StringEntity(jsonBody, ContentType.APPLICATION_JSON);
+            request.setEntity(entity);
+
+            HttpResponse response = httpClient.execute(request);
+            final int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200) {
+                final String responseBody = EntityUtils.toString(response.getEntity());
+                log.error("Failed to process transcription result {}: {}", statusCode, responseBody);
+                throw new RuntimeException("Failed to process transcription result");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process transcription result", e);
+        }
+    }
+
+    public AzureTranscriptionResponse getTranscriptionResponse(String transcriptionId) {
+        try (final CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            final HttpGet request = new HttpGet(speechAiEndpoint + "/transcriptions/" + transcriptionId);
+            request.addHeader("Content-Type", "application/json");
+            request.addHeader("Ocp-Apim-Subscription-Key", speechAiSubscriptionKey);
+
+            final HttpResponse response = httpClient.execute(request);
+            final int statusCode = response.getStatusLine().getStatusCode();
+            final String responseBody = EntityUtils.toString(response.getEntity());
+
+            if (statusCode != 200) {
+                log.error("Failed to get transcription response {}: {}", statusCode, responseBody);
+                throw new RuntimeException("Failed to get transcription response");
+            }
+
+            return objectMapper.readValue(responseBody, AzureTranscriptionResponse.class);
+        }catch (Exception e) {
+            throw new RuntimeException("Failed to get transcription response", e);
         }
     }
 }
