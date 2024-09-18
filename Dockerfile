@@ -39,11 +39,14 @@ ENV SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_GOOGLE_USER_INFO_URI=https://openidco
 ENV SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_GOOGLE_TOKEN_URI=https://oauth2.googleapis.com/token
 ENV SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_GOOGLE_AUTHORIZATION_URI=https://accounts.google.com/o/oauth2/v2/auth
 ENV APPLICATION_ADMIN_URL=https://cognitube-admin.thankfulfield-7c1523f0.eastus.azurecontainerapps.io
+ENV AZURE_SPEECH_AI_ENDPOINT=https://eastus.api.cognitive.microsoft.com/speechtotext/v3.1
+ENV AZURE_SPEECH_AI_SUBSCRIPTION_KEY=f64dbdf234074181a053e7d8b227067e
 
 ENV KAFKA_VIDEO_PROCESS_TOPIC=video-process
 ENV KAFKA_VIDEO_AI_TOPIC=video-ai
 ENV KAFKA_VIDEO_REENCODE_TOPIC=video-reencode
 ENV KAFKA_VIDEO_AUDIO_EXTRACTION_TOPIC=video-audio-extraction
+ENV KAFKA_VIDEO_KEYWORD_FETCH_TOPIC=video-keyword-result
 ENV KAFKA_VIDEO_PROCESS_GROUP_ID=video-process-group
 
 ENTRYPOINT [ "java", "-jar", "/usr/local/lib/app.jar" ]
