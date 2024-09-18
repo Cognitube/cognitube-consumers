@@ -4,17 +4,22 @@ import com.cognitube.consumer.consumer.dao.VideoEncodeMessage;
 import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.model.Video;
 import com.cognitube.consumer.service.VideoProcessingService;
+import com.cognitube.consumer.util.DateUtil;
+import com.cognitube.consumer.util.RedisKeys;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.time.LocalDate;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -59,10 +64,10 @@ public class VideoEncodeConsumer {
             final Video video = Video.builder()
                     .setId(videoId)
                     .setFileLink(processedVideoUrl)
+                    .setLength(videoDuration)
                     .build();
             videoMapper.updateVideo(video);
 
-            videoProcessingService.recordVideoDuration(message.getVideoId(), videoDuration);
             videoProcessingService.recordVideoProcessingStatus(message.getVideoId(), KAFKA_VIDEO_REENCODE_TOPIC);
             videoProcessingService.updateVideoStatusIfDone(message.getVideoId());
         } catch (Exception e) {

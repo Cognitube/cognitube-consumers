@@ -122,7 +122,6 @@ public class VideoProcessingService {
                     hashOps.put((K) videoProcessStatusKey, "videoName", videoName);
                     hashOps.put((K) videoProcessStatusKey, "userId", userId.toString());
                     hashOps.put((K) videoProcessStatusKey, "retryCount", String.valueOf(retryCount));
-                    hashOps.put((K) videoProcessStatusKey, "videoDuration", "0.0");
                     operations.expire((K) videoProcessStatusKey, 12, TimeUnit.HOURS);
 
                     final ZSetOperations<K, Object> zSetOps = (ZSetOperations) operations.opsForZSet();
@@ -141,16 +140,6 @@ public class VideoProcessingService {
             log.info("Video processing overtime key: {}", videoProcessOvertimeKey);
             log.info("Video processing overtime all chars key: {}", videoProcessOvertimeAllCharsKey);
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void recordVideoDuration(String videoId, double videoDuration) {
-        final String videoProcessStatusKey = RedisKeys.getVideoProcessingStatusKey(videoId);
-        try {
-            final HashOperations<String, Object, Object> hashOps = redisTemplate.opsForHash();
-            hashOps.put(videoProcessStatusKey, "videoDuration", String.valueOf(videoDuration));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -220,7 +209,6 @@ public class VideoProcessingService {
             final String overallStatus = (String) hashOps.get(videoProcessStatusKey, "status");
             final String videoName = (String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "videoName"));
             final Long userId = Long.parseLong((String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "userId")));
-            final double videoDuration = Double.parseDouble((String) Objects.requireNonNull(hashOps.get(videoProcessStatusKey, "videoDuration")));
 
             if ("failed".equals(overallStatus)) {
                 handleFailedProcessing(userId, videoName);
@@ -240,9 +228,13 @@ public class VideoProcessingService {
             final Video video = Video.builder()
                     .setId(videoId)
                     .setStatus(VideoStatus.OK)
-                    .setLength(videoDuration)
                     .build();
             videoMapper.updateVideo(video);
+
+            final Double videoDuration = videoMapper.getVideoDuration(videoId);
+            if (videoDuration == null) {
+                throw new RuntimeException("Failed to get video duration");
+            }
 
             final String userWeeklyUploadLimitKey = RedisKeys.getUserWeeklyUploadLimitKey(userId, String.valueOf(DateUtil.getWeekOfYear(LocalDate.now())));
             redisTemplate.opsForValue().increment(userWeeklyUploadLimitKey, videoDuration);

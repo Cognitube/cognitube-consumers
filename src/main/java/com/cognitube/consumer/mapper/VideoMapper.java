@@ -14,4 +14,11 @@ public interface VideoMapper {
      */
     void updateVideo(Video video);
 
+    /**
+     * Get video by id
+     * @param videoId
+     * @return
+     */
+    Double getVideoDuration(String videoId);
+
 }
