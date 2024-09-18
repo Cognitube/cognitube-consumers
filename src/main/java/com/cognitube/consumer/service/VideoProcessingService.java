@@ -1,5 +1,6 @@
 package com.cognitube.consumer.service;
 
+import com.cognitube.consumer.dto.request.TranscriptionRequest;
 import com.cognitube.consumer.enums.VideoStatus;
 import com.cognitube.consumer.mapper.VideoMapper;
 import com.cognitube.consumer.model.Video;
@@ -334,13 +335,16 @@ public class VideoProcessingService {
     }
 
     public void processTranscriptionResult(String transcriptionId) {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpPost request = new HttpPost(keywordServiceUrl + "/v1/transcription/process");
+        try (final CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            final HttpPost request = new HttpPost(keywordServiceUrl + "/v1/transcription/process");
+            final String jsonBody = objectMapper.writeValueAsString(TranscriptionRequest.builder().setId(transcriptionId).build());
+            final StringEntity entity = new StringEntity(jsonBody, ContentType.APPLICATION_JSON);
+            request.setEntity(entity);
 
             HttpResponse response = httpClient.execute(request);
-            int statusCode = response.getStatusLine().getStatusCode();
+            final int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200) {
-                String responseBody = EntityUtils.toString(response.getEntity());
+                final String responseBody = EntityUtils.toString(response.getEntity());
                 log.error("Failed to process transcription result {}: {}", statusCode, responseBody);
                 throw new RuntimeException("Failed to process transcription result");
             }
@@ -350,24 +354,21 @@ public class VideoProcessingService {
     }
 
     public AzureTranscriptionResponse getTranscriptionResponse(String transcriptionId) {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(speechAiEndpoint + "/transcriptions/" + transcriptionId);
+        try (final CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            final HttpGet request = new HttpGet(speechAiEndpoint + "/transcriptions/" + transcriptionId);
             request.addHeader("Content-Type", "application/json");
             request.addHeader("Ocp-Apim-Subscription-Key", speechAiSubscriptionKey);
 
+            final HttpResponse response = httpClient.execute(request);
+            final int statusCode = response.getStatusLine().getStatusCode();
+            final String responseBody = EntityUtils.toString(response.getEntity());
 
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                int statusCode = response.getStatusLine().getStatusCode();
-                String responseBody = EntityUtils.toString(response.getEntity());
-
-                if (statusCode != 200) {
-                    log.error("Failed to get transcription response {}: {}", statusCode, responseBody);
-                    throw new RuntimeException("Failed to get transcription response");
-                }
-
-                // Parse the response body to AzureTranscriptionResponse
-                return objectMapper.readValue(responseBody, AzureTranscriptionResponse.class);
+            if (statusCode != 200) {
+                log.error("Failed to get transcription response {}: {}", statusCode, responseBody);
+                throw new RuntimeException("Failed to get transcription response");
             }
+
+            return objectMapper.readValue(responseBody, AzureTranscriptionResponse.class);
         }catch (Exception e) {
             throw new RuntimeException("Failed to get transcription response", e);
         }
